@@ -9,10 +9,12 @@ using namespace std;
 
 int main(int argc, char **argv) 
 {
+
   check(argc, argv);
 
   char continu = 'y';
   const int nb_rotors = argc - 3;
+  cout << "there are " << nb_rotors << " rotors" << endl;
 
   /*initialisation: declare objects and assign them to config files specified on command line.
     reach here iif there are no errors.*/
@@ -29,7 +31,7 @@ int main(int argc, char **argv)
   while(continu=='y') {
 
     /*get input from command line, checking char by char that it is correct*/
-    getInput();
+    pb.getInput();
 
 
     cout << "again? ";

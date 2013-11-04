@@ -1,4 +1,5 @@
 #include<iostream>
+#include<cstdlib>
 #include<fstream>
 #include<cstring>
 #include<iterator>
@@ -18,6 +19,7 @@ protected:
 
 public:
 
+  /*constructor 1*/
   Skeleton(const char *config_filename) {
     int temp;
     ifstream config_file;
@@ -32,6 +34,7 @@ public:
     config_array[temp] = sintinel;            //add my own sentinel value for integer arrays
   }
 
+  /*constructor 2*/
   Skeleton() {
     for (int i =0; i<26; i++) {
       message[i] = i;
@@ -73,6 +76,35 @@ public:
 
   Plugboard() : Skeleton() {
     input = "ABCDEFG";
+  }
+
+  void getInput()
+  {
+    int i = 0;
+    char input;
+
+    do {
+      cout << "Enter input (enter '.' to stop): ";
+      cin >> input;
+
+
+      if ((int)input<91 && (int)input>64) {
+	if (input!='.' && input!=10 && input!=13 && input!=9 && input!=32) {
+	  /*if input is neither a capital letter or a new line, carriage return, tab, space, then ERROR*/
+	  error_description(-13);
+	  exit(-13);
+	}
+	/*if input is a new line, carriage return, tab, space, then do nothing*/
+      }
+
+      else { /*if input is a capital letter, add it to message*/
+	message[i] = (int) input - 65;
+	i++;
+      }
+
+    } while (input != '.');
+
+    message[i] = sintinel;
   }
 
   void scramble() {

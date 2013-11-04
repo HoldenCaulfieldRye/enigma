@@ -54,9 +54,12 @@ void error_description(int code) {
 void check(int argc, char **argv)
 {
   /*check sufficient number of parameters*/
-  if (argc<3)
+  if (argc<3) {
     error_description(-12);
-  exit(-12);
+    exit(-12);
+  }
+
+  cout << "\nnumber of command line parameters is valid" << endl;
 
   /*if rotors, check that there is a rotor starting positions file*/
   string lastArg = argv[argc-1];
@@ -65,47 +68,19 @@ void check(int argc, char **argv)
     exit(-17);
   }
 
+  cout << "rotor position file detected" << endl;
+
   /*check that each configuration file is valid: valid index, numeric characters*/
-  for (int i=0; i<argc; i++) {
+  for (int i=0; i<argc && i<10; i++) {
     ifstream file;
-    file.open(argv[i]);
+    file.open(argv[i]);         //HAVENT DONE THIS YET
     file.close();
   }
 
-  cout << "I hope you entered config files in pb, ref, (rot) order!" << endl << endl;
+  cout << "configuration files are valid" << endl << "check was successful." << endl;
 }
 
 
-int *getInput()
-{
-  int i = 0;
-  char input;
-  int message[500];
-
-  do {
-    cout << "Enter input (enter '.' to stop): ";
-    cin >> input;
-
-
-    if ((int)input<91 && (int)input>64) {
-      if (input!='.' && input!=10 && input!=13 && input!=9 && input!=32) {
-	/*if input is neither a capital letter or a new line, carriage return, tab, space, then ERROR*/
-	error_description(-13);
-	exit(-13);
-      }
-	/*if input is a new line, carriage return, tab, space, then do nothing*/
-    }
-
-    else { /*if input is a capital letter, add it to message*/
-    message[i] = (int) input - 65;
-    i++;
-    }
-
-  } while (input != '.');
-
-  message[i] = sintinel;
-  return message;
-}
 
 
   

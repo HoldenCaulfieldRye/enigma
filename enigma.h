@@ -27,4 +27,4 @@ void error_description(int code);
 /*checks that shell command (and its associated files) are valid*/
 void check(int argc, char **argv);
 
-void getInput();
+
