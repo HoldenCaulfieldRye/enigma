@@ -7,8 +7,15 @@ using namespace std;
 int main(int argc, char argv**) 
 {
   if (argc<3)
-    error_description(-12);
+    error_description(-12); //insufficient number of parameters
   exit(-12);
+
+  //string lastArg = argv[argc-1];
+  if (argv[argc-1].compare(argv[argc-1].length-4, 4, ".pos") != 0 && argc>3) //lastArg.compare(lastArg.length - 4, 4, ".pos")
+    error_description(-17); //no rotor starting position
+  exit(-17);
+
+  //check for whether a .pos file is the final argument using str.compare()
 
   cout << "I hope you entered config files in pb, ref, (rot) order!" << endl << endl;
 
