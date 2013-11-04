@@ -1,5 +1,6 @@
 #include<iostream>
 #include<fstream>
+<<<<<<< HEAD
 #include<cstring>
 #include<iterator>
 
@@ -44,6 +45,31 @@ public:
 class Plugboard : Skeleton 
 {
 private:
+=======
+
+using namespace std;
+
+#define sintinel -15 //sentinel for integer array
+
+
+class Skeleton {
+protected:
+  int *message;
+  ifstream configuration;
+
+public:
+  virtual void scramble() = 0; //if all methods are pure virtual, no point having this base class
+  virtual void invert() = 0;   //would be great if this could be defined once for all classes
+  virtual void sendTo(Skeleton obj) {
+    obj.message = message;
+  }
+};
+
+
+class Plugboard : Skeleton {
+private:
+  string input;
+>>>>>>> 7e8d8930df69764be9b0215f01aab61f57846696
 
   void strInt() {
     int i=0;
@@ -53,6 +79,7 @@ private:
   }
 
 public:
+<<<<<<< HEAD
 
   int check() {
 
@@ -125,3 +152,23 @@ const char *error_description(int code) {
  default:
    return "Unknown error";
 }
+=======
+  void getInput() { //involve INVALID_INPUT_CHARACTER
+  }
+  void scramble() {
+  }
+};
+
+class Rotor{
+};
+
+class Protor : Rotor {   //front rotor which does IO with plugboard
+};
+
+class Brotor : Rotor{   //back rotor which does IO with reflector
+};
+
+class Reflector {
+};
+
+>>>>>>> 7e8d8930df69764be9b0215f01aab61f57846696

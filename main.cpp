@@ -1,6 +1,7 @@
 #include<iostream>
 using namespace std;
 
+<<<<<<< HEAD
 #include"enigma.h"
 
 int main(int argc, char argv**) 
@@ -43,5 +44,18 @@ int main(int argc, char argv**)
     cin >> continu;
   }
   delete [] rotor;
+=======
+#include"enigma.cpp"
+
+int main() {
+  char continu = 'y';
+  Plugboard pb;
+
+  while(continu=='y') {
+    pb.getInput();
+    cout << "again? ";
+    cin >> continu;
+  }
+>>>>>>> 7e8d8930df69764be9b0215f01aab61f57846696
   return 0;
 }
