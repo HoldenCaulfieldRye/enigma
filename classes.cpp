@@ -2,66 +2,88 @@
 #include<fstream>
 #include<cstring>
 #include<iterator>
+#include<sstream>
+#include<vector>
 
 using namespace std;
 
-#include"imperative.cpp"
+#include"enigma.h"
 
 
 class Skeleton 
 {
 protected:
-  int *message;
-  int *config_array;
+  int message[500];
+  int config_array[100];
 
 public:
 
   Skeleton(const char *config_filename) {
-    vector<int> temp;
+    int temp;
     ifstream config_file;
-    config_file.open(config_filename);
+    config_file.open(config_filename);        //begin is an istream iterator linked to config
+                                              //also creating end, which by default has a kind of sentinel value
     istream_iterator<int> begin(config_file), end;
-    copy(begin, end, back_inserter(temp));
-    config_array = &temp[0];
+
+    for (temp=0; begin != end; ++begin, temp++) { //stop looping when value of begin is sentinel
+      config_array[temp] = *begin;
+    }
+
+    config_array[temp] = sintinel;            //add my own sentinel value for integer arrays
   }
 
   Skeleton() {
-    message = {0,1,2,3,4,5,6};
-    config_array = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
+    for (int i =0; i<26; i++) {
+      message[i] = i;
+      config_array[i] = i;
+    }
+
+    message[26]=sintinel;
+    config_array[26]=sintinel;
   }
 
-  void scramble(); //if all methods are pure virtual, no point having this base class
+  void scramble(); 
 
-  void invert();   //would be great if this could be defined once for all classes
+  void invert();
 
   void sendTo(Skeleton obj) {
-    obj.message = message;
+    for (int i=0; message[i] != sintinel; i++)
+      obj.message[i] = message[i];
   }
 
-  ~Plugboard() {
-    config_file.close();       //do I need to delete all fields, or only dynamic ones?
+  void print() {
+    cout << "message: ";
+    for (int i=0; message[i]!=sintinel; cout << message[i] << " ", i++);
+    cout << endl;
+
+    cout << "config_array: ";
+    for (int i=0; config_array[i]!=sintinel; cout << config_array[i] << " ", i++);
+    cout << endl;
   }
 
 };
 
 
 
-class Plugboard : Skeleton {
+class Plugboard : public Skeleton {
 private:
   string input;
 
 public:
 
-  Pluboard() : Skeleton() {
+  Plugboard() : Skeleton() {
     input = "ABCDEFG";
   }
 
   void scramble() {
   }
+
+  // Skeleton::print();
+
 };
 
 
-class Reflector
+class Reflector : public Skeleton
 {
 private:
 
@@ -75,11 +97,13 @@ public:
   void scramble() {
   }
 
+  // Skeleton::print();
+
 };
 
 
 
-class Rotor : Skeleton
+class Rotor : public Skeleton
 {
 private:
 
@@ -90,10 +114,12 @@ public:
   Rotor() : Skeleton() {
   }
 
+  //Skeleton::print();
+
 };
 
 
-class Protor : Rotor    //front rotor which does IO with plugboard
+class Protor : public Rotor    //front rotor which does IO with plugboard
 {
 private:
 
@@ -104,10 +130,11 @@ public:
   Protor() : Rotor() {
   }
 
+
 };
 
 
-class Brotor : Rotor   //back rotor which does IO with reflector
+class Brotor : public Rotor   //back rotor which does IO with reflector
 {
 private:
 
@@ -115,7 +142,7 @@ protected:
 
 public:
 
-  Protor() : Rotor() {
+  Brotor() : Rotor() {
   }
 
 };
