@@ -21,3 +21,9 @@
 #define INVALID_REFLECTOR_MAPPING -18
 #define INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS -19
 
+/*function for errors*/
+const char *error_description(int code);
+
+
+/*checks that shell command (and its associated files) are valid*/
+void check(int argc, char argv**);

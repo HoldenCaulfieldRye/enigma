@@ -1,13 +1,12 @@
 #include<iostream>
 #include<fstream>
-<<<<<<< HEAD
 #include<cstring>
 #include<iterator>
 
 using namespace std;
 
+#include"imperative.cpp"
 
-const char *error_description(int code);
 
 class Skeleton 
 {
@@ -45,7 +44,6 @@ public:
 class Plugboard : Skeleton 
 {
 private:
-=======
 
 using namespace std;
 
@@ -69,7 +67,6 @@ public:
 class Plugboard : Skeleton {
 private:
   string input;
->>>>>>> 7e8d8930df69764be9b0215f01aab61f57846696
 
   void strInt() {
     int i=0;
@@ -79,7 +76,6 @@ private:
   }
 
 public:
-<<<<<<< HEAD
 
   int check() {
 
@@ -126,33 +122,8 @@ class Reflector
 };
 
 
-const char *error_description(int code) {
-  switch(code) {
-  case -10: 
-    return "invalid index (file contains a number that is not between 0 and 25)";
-  case -11:
-    return "non numeric character (in file)";
-  case -12:
-    return "insufficient number of parameters (given in command line)";
-  case -13:
-    return "invalid input character (a non capital letter was input)";
-  case -14:
-    return "impossible plugboard configuration (file attempts to connect a contact with itself or with multiple contacts)";
-  case -15:
-    return "incorrect number of plugboard parameters (should be an even number of them)";
-  case -16:
-    return "invalid rotor mapping (an input is not mapped or an input has multiple mappings";
-  case -17:
-    return "no rotor starting position (insufficient number of starting positions)";
-  case -18:
-    return "invalid reflector mapping (file attempts to connect a contact with itself or with multiple contacts)";
-  case -19:
-    return "incorrect number of reflector parameters (file does not contain exactly 13 pairs of numbers)";
-  }
- default:
-   return "Unknown error";
-}
-=======
+
+
   void getInput() { //involve INVALID_INPUT_CHARACTER
   }
   void scramble() {
@@ -171,4 +142,3 @@ class Brotor : Rotor{   //back rotor which does IO with reflector
 class Reflector {
 };
 
->>>>>>> 7e8d8930df69764be9b0215f01aab61f57846696
