@@ -8,31 +8,42 @@ using namespace std;
 
 
 /*function for errors*/
-const char *error_description(int code) {
+void *error_description(int code) {
   switch(code) {
   case -10: 
-    return "invalid index (file contains a number that is not between 0 and 25)";
+    cout << "invalid index (file contains a number that is not between 0 and 25)";
+    exit(-10);
   case -11:
-    return "non numeric character (in file)";
+    cout << "non numeric character (in file)";
+    exit(-11);
   case -12:
-    return "insufficient number of parameters (given in command line)";
+    cout << "insufficient number of parameters (given in command line)";
+    exit(-12);
   case -13:
-    return "invalid input character (a non capital letter was input)";
+    cout << "invalid input character (a non capital letter was input)";
+    exit(-13);
   case -14:
-    return "impossible plugboard configuration (file attempts to connect a contact with itself or with multiple contacts)";
+    cout << "impossible plugboard configuration (file attempts to connect a contact with itself or with multiple contacts)";
+    exit(-14);
   case -15:
-    return "incorrect number of plugboard parameters (should be an even number of them)";
+    cout << "incorrect number of plugboard parameters (should be an even number of them)";
+    exit(-15);
   case -16:
-    return "invalid rotor mapping (an input is not mapped or an input has multiple mappings";
+    cout << "invalid rotor mapping (an input is not mapped or an input has multiple mappings";
+    exit(-16);
   case -17:
-    return "no rotor starting position (insufficient number of starting positions)";
+    cout << "no rotor starting position (insufficient number of starting positions)";
+    exit(-17);
   case -18:
-    return "invalid reflector mapping (file attempts to connect a contact with itself or with multiple contacts)";
+    cout << "invalid reflector mapping (file attempts to connect a contact with itself or with multiple contacts)";
+    exit(-18);
   case -19:
-    return "incorrect number of reflector parameters (file does not contain exactly 13 pairs of numbers)";
+    cout << "incorrect number of reflector parameters (file does not contain exactly 13 pairs of numbers)";
+    exit(-19);
   }
  default:
-   return "Unknown error";
+    "Unknown error";
+    exit(-1);
 }
 
 
@@ -51,6 +62,27 @@ void check(int argc, char argv**)
   exit(-17);
 
   /*check that each configuration file is valid: valid index, numeric characters*/
+  for (int i=0; i<argc; i++) {
+    ifstream file;
+    file.open(argv[i]);
+  }
 
   cout << "I hope you entered config files in pb, ref, (rot) order!" << endl << endl;
+}
+
+
+void getInput()
+{
+    int i = 0;
+    char input;
+    cout << "Enter input (enter "." to stop): ";
+    cin >> input;
+    while (input != '.') {
+      if (input < 91 && input > 64)   //if input is a capital letter ALSO NEED TO ACCEPT SPACE, TAB, CARRIAGE RETURN, NEW LINE
+	message[i] = (int) input - 65;
+      else {
+	error_description(-13);
+	exit(-13);
+      }	
+    }
 }

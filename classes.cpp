@@ -25,11 +25,16 @@ public:
     config_array = &temp[0];
   }
 
-  virtual void scramble() = 0; //if all methods are pure virtual, no point having this base class
+  Skeleton() {
+    message = {0,1,2,3,4,5,6};
+    config_array = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
+  }
 
-  virtual void invert() = 0;   //would be great if this could be defined once for all classes
+  void scramble(); //if all methods are pure virtual, no point having this base class
 
-  virtual void sendTo(Skeleton obj) {
+  void invert();   //would be great if this could be defined once for all classes
+
+  void sendTo(Skeleton obj) {
     obj.message = message;
   }
 
@@ -41,104 +46,76 @@ public:
 
 
 
-class Plugboard : Skeleton 
-{
-private:
-
-using namespace std;
-
-#define sintinel -15 //sentinel for integer array
-
-
-class Skeleton {
-protected:
-  int *message;
-  ifstream configuration;
-
-public:
-  virtual void scramble() = 0; //if all methods are pure virtual, no point having this base class
-  virtual void invert() = 0;   //would be great if this could be defined once for all classes
-  virtual void sendTo(Skeleton obj) {
-    obj.message = message;
-  }
-};
-
-
 class Plugboard : Skeleton {
 private:
   string input;
 
-  void strInt() {
-    int i=0;
-    for (; input[i]!='\0'; i++)
-      message[i] = (int) input[i];
-    message[i] = sintinel;
-  }
-
 public:
 
-  int check() {
-
-  }
-
-  int getInput() { //involve INVALID_INPUT_CHARACTER    
-    int i = 0;
-    char input;
-    cout << "Enter input (enter "." to stop): ";
-    cin >> input;
-    while (input != '.') {
-      if (input < 91 && input > 64)   //if input is a capital letter
-	message[i] = (int) input - 65;
-      else 
-	strInt();
-    }
+  Pluboard() : Skeleton() {
+    input = "ABCDEFG";
   }
 
   void scramble() {
   }
-
-
-
 };
 
-class Rotor
-{
-
-};
-
-class Protor : Rotor    //front rotor which does IO with plugboard
-{
-
-};
-
-class Brotor : Rotor   //back rotor which does IO with reflector
-{
-
-};
 
 class Reflector
 {
+private:
 
-};
+protected:
 
+public:
 
-
-
-  void getInput() { //involve INVALID_INPUT_CHARACTER
+  Reflector() : Skeleton() {
   }
+
   void scramble() {
   }
+
 };
 
-class Rotor{
+
+
+class Rotor : Skeleton
+{
+private:
+
+protected:
+
+public:
+
+  Rotor() : Skeleton() {
+  }
+
 };
 
-class Protor : Rotor {   //front rotor which does IO with plugboard
+
+class Protor : Rotor    //front rotor which does IO with plugboard
+{
+private:
+
+protected:
+
+public:
+
+  Protor() : Rotor() {
+  }
+
 };
 
-class Brotor : Rotor{   //back rotor which does IO with reflector
-};
 
-class Reflector {
-};
+class Brotor : Rotor   //back rotor which does IO with reflector
+{
+private:
 
+protected:
+
+public:
+
+  Protor() : Rotor() {
+  }
+
+};

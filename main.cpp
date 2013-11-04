@@ -14,25 +14,21 @@ int main(int argc, char argv**)
   char continu = 'y';
   const int nb_rotors = argc - 3;
 
-  /*initialisation: declare objects and assign them to config files specified on command line*/
-  Plugboard pb(argv[1]);
-  Reflector rf(argv[2]);
+  /*initialisation: declare objects and assign them to config files specified on command line.
+    reach here iif there are no errors.*/
+  Plugboard pb(); //Plugboard pb(argv[1]);
+  Reflector rf(); //Reflector rf(argv[2])
   Rotor *rotor;
   for (int i=3; i<nb_rotors; i++) {
-    rotor = new Rotor(argv[i-3]);
+    rotor = new Rotor();  //rotor = new Rotor(argv[i-3]);
   }
   rotor[nb_rotors] = NULL;
-
-  /*compliance: check that configuration files are valid*/
-  pb.check();
-  rf.check();
-  for (int i=0; rotor[i] != NULL; i++)
-    rotor[i].check();   
 
 
   while(continu=='y') {
 
-    pb.getInput();
+    /*get input from command line, checking char by char that it is correct*/
+    getInput();
 
 
 
