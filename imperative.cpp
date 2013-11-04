@@ -76,22 +76,36 @@ void check(int argc, char **argv)
 }
 
 
-void getInput()
+int *getInput()
 {
   int i = 0;
   char input;
-  string message;
+  int message[500];
 
   do {
     cout << "Enter input (enter '.' to stop): ";
     cin >> input;
-    if (input < 91 && input > 64 && input != '.')   //if input is a capital letter ALSO NEED TO ACCEPT SPACE, TAB, CARRIAGE RETURN, NEW LINE
-      message[i] = (int) input - 65;
-    else {
-      error_description(-13);
-      exit(-13);
-    }	
+
+
+    if ((int)input<91 && (int)input>64) {
+      if (input!='.' && input!=10 && input!=13 && input!=9 && input!=32) {
+	/*if input is neither a capital letter or a new line, carriage return, tab, space, then ERROR*/
+	error_description(-13);
+	exit(-13);
+      }
+	/*if input is a new line, carriage return, tab, space, then do nothing*/
+    }
+
+    else { /*if input is a capital letter, add it to message*/
+    message[i] = (int) input - 65;
+    i++;
+    }
+
   } while (input != '.');
 
-  message[i] = '\0';
+  message[i] = sintinel;
+  return message;
 }
+
+
+  
