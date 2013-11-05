@@ -1,4 +1,5 @@
-/*sentinel for integer array*/
+/*sentinel for integer array, intended for arrays containing configuration information. 
+  this is a good value because -1 could never appear as a 'proper' configuration value. */
 #define sintinel -1          
 
 /*generic error codes*/

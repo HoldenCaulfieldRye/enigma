@@ -4,7 +4,7 @@
 #include<cstring>
 #include<iterator>
 #include<sstream>
-#include<vector>
+#include<string>
 
 using namespace std;
 
@@ -20,18 +20,31 @@ protected:
 public:
 
   /*constructor 1*/
-  Skeleton(const char *config_filename) {
-    int temp;
-    ifstream config_file;
-    config_file.open(config_filename);        //begin is an istream iterator linked to config
-                                              //also creating end, which by default has a kind of sentinel value
-    istream_iterator<int> begin(config_file), end;
+  Skeleton(const char* config_filename) {
 
-    for (temp=0; begin != end; ++begin, temp++) { //stop looping when value of begin is sentinel
-      config_array[temp] = *begin;
+    /*check that index is valid*/
+    int num, i=0;
+    ifstream file;
+    file.open(config_filename);
+
+    cout << config_filename << " opened again to check index" << endl;
+
+    for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
+      num = *begin;
+      if (num < 0 || num > 25) {
+	cout << "in file " << i << ": ";	 
+	error_description(-10);
+      }
+      config_array[i] = num;
     }
+    config_array[i] = sintinel;
+    file.close();
 
-    config_array[temp] = sintinel;            //add my own sentinel value for integer arrays
+    cout << "file has valid index" << endl;
+
+    for (int i =0; message[i]!=sintinel; i++) {
+      message[i] = i;
+    }
   }
 
   /*constructor 2*/
@@ -74,6 +87,9 @@ private:
 
 public:
 
+  Plugboard(const char* config_filename) : Skeleton(config_filename) {
+  }
+
   Plugboard() : Skeleton() {
     input = "ABCDEFG";
   }
@@ -82,26 +98,26 @@ public:
   {
     int i = 0;
     char input;
+    int ascii;
 
+    /*check that input is a capital letter, new line, carriage return, tab or space*/
     do {
       cout << "Enter input (enter '.' to stop): ";
       cin >> input;
+      ascii = (int) input;
 
-
-      if ((int)input<91 && (int)input>64) {
-	if (input!='.' && input!=10 && input!=13 && input!=9 && input!=32) {
-	  /*if input is neither a capital letter or a new line, carriage return, tab, space, then ERROR*/
+      if (ascii<91 && ascii >64) {
+	if (input!='.' && ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
+	  
 	  error_description(-13);
 	  exit(-13);
 	}
-	/*if input is a new line, carriage return, tab, space, then do nothing*/
+	/*if new line, carriage return, tab or space, ignore*/
       }
-
-      else { /*if input is a capital letter, add it to message*/
-	message[i] = (int) input - 65;
+      else {                            //add to message
+	message[i] = ascii - 65;
 	i++;
       }
-
     } while (input != '.');
 
     message[i] = sintinel;
@@ -123,13 +139,14 @@ protected:
 
 public:
 
+  Reflector(const char* config_filename) : Skeleton(config_filename) {
+  }
+
   Reflector() : Skeleton() {
   }
 
   void scramble() {
   }
-
-  // Skeleton::print();
 
 };
 
@@ -143,10 +160,11 @@ protected:
 
 public:
 
-  Rotor() : Skeleton() {
+  Rotor(const char* config_filename) : Skeleton(config_filename) {
   }
 
-  //Skeleton::print();
+  Rotor() : Skeleton() {
+  }
 
 };
 
@@ -158,6 +176,9 @@ private:
 protected:
 
 public:
+
+  Protor(const char* config_filename) : Rotor(config_filename) {
+  }
 
   Protor() : Rotor() {
   }
@@ -172,6 +193,9 @@ private:
 protected:
 
 public:
+
+  Brotor(const char* config_filename) : Rotor(config_filename) {
+  }
 
   Brotor() : Rotor() {
   }

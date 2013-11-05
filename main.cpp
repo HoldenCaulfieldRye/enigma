@@ -9,7 +9,6 @@ using namespace std;
 
 int main(int argc, char **argv) 
 {
-
   check(argc, argv);
 
   char continu = 'y';
@@ -18,15 +17,18 @@ int main(int argc, char **argv)
 
   /*initialisation: declare objects and assign them to config files specified on command line.
     reach here iif there are no errors.*/
-  Plugboard pb; //Plugboard pb(argv[1]);
-  Reflector rf; //Reflector rf(argv[2])
-  Rotor *rotor;
-  for (int i=0; i<nb_rotors; i++)
-    rotor= new Rotor;  //rotor[i] = new Rotor(argv[i-3]);
+  Plugboard pb(argv[1]);
 
-  pb.print(); rf.print(); 
+  Reflector rf(argv[2]); //Reflector rf(argv[2])
+  Rotor *rotor = new Rotor;
+
   for (int i=0; i<nb_rotors; i++)
-    rotor[i].print();
+    rotor[i](argv[i+2]);
+  cout << "plugboard: "; pb.print(); cout << endl;
+  cout << "reflector: "; rf.print(); cout << endl;
+
+  for (int i=0; i<nb_rotors; i++) {
+    cout << "rotor[" << i << "]: "; rotor[i].print(); cout << endl; }
 
   while(continu=='y') {
 
