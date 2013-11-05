@@ -40,11 +40,7 @@ public:
     config_array[i] = sintinel;
     file.close();
 
-    cout << "file has valid index" << endl;
-
-    for (int i =0; message[i]!=sintinel; i++) {
-      message[i] = i;
-    }
+    cout << "\nfile has valid index" << endl;
   }
 
   /*constructor 2*/
@@ -94,39 +90,36 @@ public:
     input = "ABCDEFG";
   }
 
-  void getInput()
+  void getInput(const char* filename)
   {
+    cout << "getting input" << endl;
     int i = 0;
-    char input;
+    char ch;
     int ascii;
+    ifstream input;
 
     /*check that input is a capital letter, new line, carriage return, tab or space*/
-    do {
-      cout << "Enter input (enter '.' to stop): ";
-      cin >> input;
-      ascii = (int) input;
-
-      if (ascii<91 && ascii >64) {
-	if (input!='.' && ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
-	  
+    input.open(filename);
+    input >> ws;
+    while (!input.fail()) {
+      input.get(ch);
+      ascii = (int) ch;
+      if (ascii>91 || ascii<64) {
+	if (ch!='.' && ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
 	  error_description(-13);
 	  exit(-13);
-	}
-	/*if new line, carriage return, tab or space, ignore*/
+	}                          //if new line, carriage return, tab or space, do nothing
       }
-      else {                            //add to message
+      else {                       //add to message
 	message[i] = ascii - 65;
 	i++;
       }
-    } while (input != '.');
-
+    }
     message[i] = sintinel;
   }
 
   void scramble() {
   }
-
-  // Skeleton::print();
 
 };
 

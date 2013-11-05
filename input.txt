@@ -1,2 +1,2 @@
-ab c	def
-g
+AB C	DEF
+G
