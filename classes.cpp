@@ -14,8 +14,9 @@ using namespace std;
 class Skeleton 
 {
 protected:
-  int message[500];
-  int config_array[100];
+   int message[500];
+   int config_array[100];
+   int config_array_size;
 
 public:
 
@@ -27,16 +28,15 @@ public:
     ifstream file;
     file.open(config_filename);
 
-    cout << config_filename << " opened again to check index" << endl;
-
     for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
       num = *begin;
-      if (num < 0 || num > 25) {
-	cout << "in file " << i << ": ";	 
-	error_description(-10);
+      if (num < 0 || num > 25) { 
+	error(-10);
       }
       config_array[i] = num;
     }
+
+    config_array_size = i;
     config_array[i] = sintinel;
     file.close();
 
@@ -72,7 +72,6 @@ public:
     for (int i=0; config_array[i]!=sintinel; cout << config_array[i] << " ", i++);
     cout << endl;
   }
-
 };
 
 
@@ -83,12 +82,40 @@ private:
 
 public:
 
-  Plugboard(const char* config_filename) : Skeleton(config_filename) {
+  Plugboard(const char* config_filename)
+  {
+    int num, i=0;
+    ifstream file;
+    file.open(config_filename);
+
+    for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
+      num = *begin;
+
+      /*check that index is valid*/
+      if (num < 0 || num > 25) { 
+	error(-10);
+      }
+      config_array[i] = num;
+
+      /*check no two identical entries in config_array*/
+      for (int j=i-1; j>=0; j--) {
+	if (config_array[i]==config_array[j])
+	  error(-14);
+      }
+    }
+
+    /*check that we have an even number of plugboard parameters*/
+    if (i % 2 != 00)
+      error(-15);
+
+    /*reach here iif plugboard config perfectly valid*/
+    config_array[i] = sintinel;
+    config_array_size = i;
+    file.close();
+
+    cout << "plugboard configuration valid" << endl;
   }
 
-  Plugboard() : Skeleton() {
-    input = "ABCDEFG";
-  }
 
   void getInput(const char* filename)
   {
@@ -105,12 +132,10 @@ public:
       input.get(ch);
       ascii = (int) ch;
       if (ascii>91 || ascii<64) {
-	if (ch!='.' && ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
-	  error_description(-13);
-	  exit(-13);
-	}                          //if new line, carriage return, tab or space, do nothing
-      }
-      else {                       //add to message
+	if (ch!='.' && ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32)
+	  error(-13);
+      }                          //if new line, carriage return, tab or space, do nothing
+      else {                     //add to message
 	message[i] = ascii - 65;
 	i++;
       }
@@ -132,11 +157,40 @@ protected:
 
 public:
 
-  Reflector(const char* config_filename) : Skeleton(config_filename) {
+  Reflector(const char* config_filename)
+  {
+    int num, i=0;
+    ifstream file;
+    file.open(config_filename);
+
+    for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
+      num = *begin;
+
+      /*check that index is valid*/
+      if (num < 0 || num > 25) { 
+	error(-10);
+      }
+      config_array[i] = num;
+
+      /*check no two identical entries in config_array*/
+      for (int j=i-1; j>=0; j--) {
+	if (config_array[i]==config_array[j])
+	  error(-18);
+      }
+    }
+
+    /*check that we have 13 pairs of reflector parameter numbers*/
+    if (i != 26)
+      error(-19);
+
+    /*reach here iif reflector config perfectly valid*/
+    config_array[i] = sintinel;
+    config_array_size = i;
+    file.close();
+
+    cout << "reflector configuration valid" << endl;
   }
 
-  Reflector() : Skeleton() {
-  }
 
   void scramble() {
   }
@@ -148,49 +202,72 @@ public:
 class Rotor : public Skeleton
 {
 private:
+   int notches[50];
+   int start_pos;
+   int order;
 
 protected:
 
 public:
 
-  Rotor(const char* config_filename) : Skeleton(config_filename) {
+  Rotor(const char* config_filename, const char* pos_filename, int rotor_nb) 
+  {
+    int num, i=0, k=0;
+    ifstream file;
+    file.open(config_filename);
+    istream_iterator<int> begin(file), end;
+
+    /*set config_array and notches*/
+    for (; begin!=end && i<26; ++begin, i++) {
+      num = *begin;
+
+      /*check that index is valid*/
+      if (num < 0 || num > 25)
+	error(-10);
+
+      config_array[i] = num;
+
+      /*check no two identical entries in config_array*/
+      for (int j=i-1; j>=0; j--) {
+	if (config_array[i]==config_array[j])
+	  error(-18);
+      }
+    }
+
+    /*check that we have every input mapped*/
+    /*reach here iif no identical config_array entries, so merely need to check size)*/
+    if (i != 26)
+      error(-19);
+
+    /*extract notch mapping, starting from where we left off*/
+    for (; begin!=end; ++begin, k++) {
+      num = *begin;
+
+      /*check that index is valid*/
+      if (num < 0 || num > 25)
+	error(-10);
+
+      notches[k] = num;
+    }
+
+    /*reach here iif rotor config perfectly valid*/
+    notches[k] = sintinel;
+    config_array[i] = sintinel;
+    config_array_size = i;
+    file.close();
+
+    cout << "rotor configuration valid" << endl;
+
+
+    /*set start_pos*/
+    file.open(pos_filename);
+    istream_iterator<int> begin2(file), end2;
+    for (int count=0; count < rotor_nb && begin2!=end2; ++begin2, count++);
+
+    /*check that index is valid*/
+    if (*begin < 0 || *begin > 25)
+      error(-10);
+
+    start_pos = *begin;
   }
-
-  Rotor() : Skeleton() {
-  }
-
-};
-
-
-class Protor : public Rotor    //front rotor which does IO with plugboard
-{
-private:
-
-protected:
-
-public:
-
-  Protor(const char* config_filename) : Rotor(config_filename) {
-  }
-
-  Protor() : Rotor() {
-  }
-
-};
-
-
-class Brotor : public Rotor   //back rotor which does IO with reflector
-{
-private:
-
-protected:
-
-public:
-
-  Brotor(const char* config_filename) : Rotor(config_filename) {
-  }
-
-  Brotor() : Rotor() {
-  }
-
 };

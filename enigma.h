@@ -23,7 +23,7 @@
 #define INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS -19
 
 /*function for errors*/
-void error_description(int code);
+void error(int code);
 
 /*checks that shell command (and its associated files) are valid*/
 void check(int argc, char **argv);

@@ -1,6 +1,7 @@
 #include<iostream>
 #include<string>
 #include<cstring>
+#include<vector>
 
 using namespace std;
 
@@ -18,9 +19,9 @@ int main(int argc, char **argv)
   const int nb_rotors = argc - 3;
   Plugboard pb(argv[1]);
   Reflector rf(argv[2]);
-  Rotor rotor[100];
-  for (int i=0; i<nb_rotors; i++)
-    rotor[i] = (argv[i+2]);
+  vector<Rotor> rotor(1, Rotor(argv[3], argv[argc-1], 0));
+  for (int i=1; i<nb_rotors; i++)
+    rotor.push_back(Rotor(argv[i+3], argv[argc-1], i));
 
   /*plugboard gets input from file, checking char-by-char it is valid*/
   pb.getInput("input.txt");
@@ -30,6 +31,6 @@ int main(int argc, char **argv)
   // for (int i=0; i<nb_rotors; i++) {
   //   cout << "rotor[" << i << "]: "; rotor[i].print(); cout << endl; }
 
-  // delete [] rotor;
+  // delete [][] rotor;
   return 0;
 }
