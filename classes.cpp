@@ -217,7 +217,7 @@ public:
     file.open(config_filename);
     istream_iterator<int> begin(file), end;
 
-    /*set config_array and notches*/
+    /*set config_array*/
     for (; begin!=end && i<26; ++begin, i++) {
       num = *begin;
 
@@ -230,16 +230,16 @@ public:
       /*check no two identical entries in config_array*/
       for (int j=i-1; j>=0; j--) {
 	if (config_array[i]==config_array[j])
-	  error(-18);
+	  error(-16);
       }
     }
 
     /*check that we have every input mapped*/
     /*reach here iif no identical config_array entries, so merely need to check size)*/
     if (i != 26)
-      error(-19);
+      error(-16);
 
-    /*extract notch mapping, starting from where we left off*/
+    /*set notches, starting from where we left off*/
     for (; begin!=end; ++begin, k++) {
       num = *begin;
 

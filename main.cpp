@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 
   /*initialisation: declare objects and assign them to config files specified on command line.
     reach here iif there are no errors.*/
-  const int nb_rotors = argc - 3;
+  const int nb_rotors = argc - 4;
   Plugboard pb(argv[1]);
   Reflector rf(argv[2]);
   vector<Rotor> rotor(1, Rotor(argv[3], argv[argc-1], 0));
