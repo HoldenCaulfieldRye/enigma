@@ -30,26 +30,45 @@ int main(int argc, char **argv)
 
 
       /*plugboard scrambles letterIndex*/ 
-      cerr << "letterIndex was: " << pb.showLetterIndex() << endl;
-
+      cerr << "letterIndex was: " << pb.showLetterIndex() << ", then plugboard scrambles" << endl;
+      pb.scramble();
       cerr << "letterIndex is now: " << pb.showLetterIndex() << endl;
 
 
       /*rightmost rotor rotates*/
+      cerr << "rotor starting positions were: "; 
+      for (int i=0; i<nb_rotors; i++)
+	cerr << rotor[i]->start_pos << ", ";
+      cerr << "then rightmost rotor rotates" << endl;
+
+      for (int i=nb_rotors-1; i>0; rotor[i]->rotate(i), i--); 
+      /*NB: if there is only one rotor in the setup, it can still rotate*/
+
+      cerr << "rotor starting positions are now: "; 
+      for (int i=0; i<nb_rotors; i++)
+	cerr << rotor[i]->start_pos << ", ";
+      cerr << endl;
+
 
       /*plugboard sends letterIndex to rightmost rotor*/
       rotor[nb_rotors-1]->setLetterIndex(pb.showLetterIndex());
 
+
       /*each rotor with a left neighbour scrambles letterIndex & sends it to neighbour*/
       for (int i=nb_rotors-1; i>0; i--) {
-	cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << endl;
+	cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << ", then rotor[" << i << "] scrambles" << endl;
 
-	cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << endl;
-      }
+	  rotor[i]->scramble();
+	  rotor[i-1]->setLetterIndex(rotor[i]->showLetterIndex());
+	
+	cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << <endl;
+      }    
 
 
       /*leftmost rotor scrambles letterIndex*/
-      cerr << "letterIndex was: " << rotor[0]->showLetterIndex() << endl;
+      cerr << "letterIndex was: " << rotor[0]->showLetterIndex() << ", then rotor[0] scrambles" << endl;
+
+      rotor[0]->scramble();
 
       cerr << "letterIndex is now: " << rotor[0]->showLetterIndex() << endl;
 
@@ -58,7 +77,9 @@ int main(int argc, char **argv)
       rf.setLetterIndex(rotor[0]->showLetterIndex());
 
       /*reflector scrambles letterIndex*/
-      cerr << "letterIndex was: " << rf.showLetterIndex() << endl;
+      cerr << "letterIndex was: " << rf.showLetterIndex() << ", then reflector scrambles" <<endl;
+
+      rf.scramble();
 
       cerr << "letterIndex is now: " << rf.showLetterIndex() << endl;
 
@@ -66,16 +87,22 @@ int main(int argc, char **argv)
       /*reflector sends letterIndex to leftmost rotor*/
       rotor[0]->setLetterIndex(rf.showLetterIndex());
 
+
       /*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
       for (int i=0; i<nb_rotors-1; i++) {
-	cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << endl;
+	cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << ", then rotor[" << i << "] inverse scrambles" << endl;
 
-	cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << endl;
-      }
+	  rotor[i]->inverseScramble();
+	  rotor[i+1]->setLetterIndex(rotor[i]->showLetterIndex());
+	
+	cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << <endl;
+      } 
 
 
       /*rightmost rotor inversely scrambles letterIndex*/
-      cerr << "letterIndex was: " << rotor[nb_rotors-1]->showLetterIndex() << endl;
+      cerr << "letterIndex was: " << rotor[nb_rotors-1]->showLetterIndex() << ", then rightmost rotor inverse scrambles" << endl;
+
+      rotor[nb_rotors-1]->inveseScramble();
 
       cerr << "letterIndex is now: " << rotor[nb_rotors-1]->showLetterIndex() << endl;
 
@@ -85,6 +112,8 @@ int main(int argc, char **argv)
 
       /*plugboard inversely scrambles letterIndex*/ 
       cerr << "letterIndex was: " << pb.showLetterIndex() << endl;
+
+      pb.inverseScramble();
 
       cerr << "letterIndex is now: " << pb.showLetterIndex() << endl;
 

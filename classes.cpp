@@ -5,6 +5,7 @@
 #include<iterator>
 #include<sstream>
 #include<string>
+#include<cassert>
 
 using namespace std;
 
@@ -19,10 +20,6 @@ protected:
   int config_array_size;
 
 public:
-
-  void scramble(); 
-
-  void invert();
 
   void print() { //DELETE THIS WHEN PROGRAM FINISHED
     cerr << "letterIndex: " << letterIndex << endl;
@@ -117,7 +114,46 @@ public:
   }
 
   void scramble() {
+    for (int i=0; i<config_array_size; i++) {
+      if (config_array[i]==letterIndex) {
+	if (i % 2 == 0) {
+	  /*i is even, so letter(config_array[i]) and letter(config_array[i+1]) are connected*/
+	  letterIndex = config_array[i+1]; 
+	  return;
+	}
+	/*i is odd, so letter(config_array[i]) and letter(config_array[i-1]) are connected*/
+	letterIndex = config_array[i-1];
+	return;
+      }
+    }
+    return; //reach here iif letter(letterIndex) is not scrambled by plugboard 
   }
+
+
+  int scramble(int number) {
+    assert(number>=0 && number<26);
+    for (int i=0; i<config_array_size; i++) {
+      if (config_array[i]==number) {
+	if (i % 2 == 0) {
+	  return config_array[i+1];
+	}
+	return config_array[i-1];
+      }
+    }
+    return number; //letter(number) is not scrambled by plugboard, so letterIndex stays the same
+  }
+
+
+  void inverseScramble() {     //for any valid config file, scramble() is a bijection on {0,.., 25}
+    for (int i=0; i<26; i++) { //this inverse function of scramble() exists, and this is it
+      if (scramble(letterIndex) == i) {
+	letterIndex = i;
+	return;
+      }
+    }
+    error(-1);                 //should not ever reach here
+  }
+
 };
 
 
@@ -164,8 +200,20 @@ public:
 
 
   void scramble() {
+    for (int i=0; i<config_array_size; i++) {
+      if (config_array[i]==letterIndex) {
+	if (i % 2 == 0) {
+	  /*i is even, so letter(config_array[i]) and letter(config_array[i+1]) are connected*/
+	  letterIndex = config_array[i+1]; 
+	  return;
+	}
+	/*i is odd, so letter(config_array[i]) and letter(config_array[i-1]) are connected*/
+	letterIndex = config_array[i-1];
+	return;
+      }
+    }
+    error(-1); //all letters should have a mapping, so should not ever reach here
   }
-
 };
 
 
@@ -240,14 +288,46 @@ public:
       error(-10);
 
     start_pos = *begin2;
+
+    cerr << "starting position for rotor[" << rotor_nb << "] is " << start_pos << endl;
+
+  }
+
+  void rotate(int rotor_nb) {
+
+    cerr << "incrementing rotor position of rotor[" << i << "]" << endl;
+
+    start_pos++;
+    for (int i=0; notches[i] != sintinel; i++) {
+      if (start_pos == notches[i] && rotor_nb!=0) {
+
+	cerr << "notch met! left rotor will rotate too" << endl;
+
+	 return true;   //even if leftmost rotor does rotate, need to return false so that...
+      }
+    }                   //...code in main won't try to run rotate(0) on left neighbour
+    return false;
   }
 
   void scramble() {
-    //TAKE START POSITION INTO ACCOUNT
+    letterIndex = config_array[(letterIndex + start_pos) % 26];
+  }
+
+  int scramble(int number)  {
+    assert(number>=0 && number<26);
+    return config_array[(number + start_pos) % 26];
+  }
+
+  void inverseScramble() {     //for any valid config file, scramble() is a bijection on {0,.., 25}
+    for (int i=0; i<26; i++) { //this inverse function of scramble() exists, and this is it
+      if (scramble(letterIndex) == i) {
+	letterIndex = i;
+	return;
+      }
+    }
+    error(-1);                 //should not ever reach here
   }
 };
-
-
 
 
 /*Improve this code by increasing inheritance where possible*/
