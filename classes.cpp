@@ -11,74 +11,44 @@ using namespace std;
 #include"enigma.h"
 
 
-class Skeleton 
+class PieceOfHardware 
 {
 protected:
-   int message[500];
-   int config_array[100];
-   int config_array_size;
+  int letterIndex;  //holds index value of a letter to encrypt, using 0-based alphabet index
+  int config_array[100];
+  int config_array_size;
 
 public:
-
-  /*constructor 1*/
-  Skeleton(const char* config_filename) {
-
-    /*check that index is valid*/
-    int num, i=0;
-    ifstream file;
-    file.open(config_filename);
-
-    for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
-      num = *begin;
-      if (num < 0 || num > 25) { 
-	error(-10);
-      }
-      config_array[i] = num;
-    }
-
-    config_array_size = i;
-    config_array[i] = sintinel;
-    file.close();
-
-    cout << "\nfile has valid index" << endl;
-  }
-
-  /*constructor 2*/
-  Skeleton() {
-    for (int i =0; i<26; i++) {
-      message[i] = i;
-      config_array[i] = i;
-    }
-
-    message[26]=sintinel;
-    config_array[26]=sintinel;
-  }
 
   void scramble(); 
 
   void invert();
 
-  void sendTo(Skeleton obj) {
-    for (int i=0; message[i] != sintinel; i++)
-      obj.message[i] = message[i];
+  void print() { //DELETE THIS WHEN PROGRAM FINISHED
+    cerr << "letterIndex: " << letterIndex << endl;
+
+    cerr << "config_array: ";
+    for (int i=0; config_array[i]!=sintinel; cerr << config_array[i] << " ", i++);
+    cerr << endl;
   }
 
-  void print() {
-    cout << "message: ";
-    for (int i=0; message[i]!=sintinel; cout << message[i] << " ", i++);
-    cout << endl;
+  int showLetterIndex() {
+    return letterIndex;
+  }
 
-    cout << "config_array: ";
-    for (int i=0; config_array[i]!=sintinel; cout << config_array[i] << " ", i++);
-    cout << endl;
+  /* because we store index of letter rather than the char letter itself, and */
+  /* because any two connected PieceOfHardware objects have a fixed "absolute position 0... */
+  /* ...to absolute position 0, absolute postion 1 to absolute position 1, etc" mapping, */
+  /* this function is very straightforward*/
+  void setLetterIndex(int value) {
+    letterIndex = value;
   }
 };
 
 
 
-class Plugboard : public Skeleton {
+class Plugboard : public PieceOfHardware {
 private:
-  string input;
 
 public:
 
@@ -88,6 +58,9 @@ public:
     ifstream file;
     file.open(config_filename);
 
+    cerr << "opened input file" << endl;
+
+    /*set config_array*/
     for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
       num = *begin;
 
@@ -113,50 +86,48 @@ public:
     config_array_size = i;
     file.close();
 
-    cout << "plugboard configuration valid" << endl;
+    cerr << "plugboard configuration valid" << endl;
   }
 
 
-  void getInput(const char* filename)
+  /*set letter: read in one character from inFile, perform checks, ignore if space etc*/
+  /*if valid, assign index value to letter and return true; if fail (inc eof) return false*/
+  bool get_letter_from_input_file()
   {
-    cout << "getting input" << endl;
-    int i = 0;
-    char ch;
+    cerr << "getting input" << endl;
     int ascii;
-    ifstream input;
+    char input;
 
     /*check that input is a capital letter, new line, carriage return, tab or space*/
-    input.open(filename);
-    input >> ws;
-    while (!input.fail()) {
-      input.get(ch);
-      ascii = (int) ch;
+    cin >> ws;
+    while (!cin.fail()) {
+      cin >> input;
+      ascii = (int) input;
       if (ascii>91 || ascii<64) {
-	if (ch!='.' && ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32)
+	if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32)
 	  error(-13);
-      }                          //if new line, carriage return, tab or space, do nothing
-      else {                     //add to message
-	message[i] = ascii - 65;
-	i++;
+	//else letter is new line, carriage return, tab or space, so do nothing
+      }                         
+      else {
+	letterIndex = ascii - 65;
+	return true;
       }
     }
-    message[i] = sintinel;
+    return false;        //reach here iif file has no more valid letters to give
   }
 
   void scramble() {
   }
-
 };
 
 
-class Reflector : public Skeleton
+class Reflector : public PieceOfHardware
 {
 private:
 
 protected:
 
 public:
-
   Reflector(const char* config_filename)
   {
     int num, i=0;
@@ -188,7 +159,7 @@ public:
     config_array_size = i;
     file.close();
 
-    cout << "reflector configuration valid" << endl;
+    cerr << "reflector configuration valid" << endl;
   }
 
 
@@ -199,7 +170,7 @@ public:
 
 
 
-class Rotor : public Skeleton
+class Rotor : public PieceOfHardware
 {
 private:
    int notches[50];
@@ -256,7 +227,7 @@ public:
     config_array_size = i;
     file.close();
 
-    cout << "rotor configuration valid" << endl;
+    cerr << "rotor configuration valid" << endl;
 
 
     /*set start_pos*/
@@ -265,9 +236,18 @@ public:
     for (int count=0; count < rotor_nb && begin2!=end2; ++begin2, count++);
 
     /*check that index is valid*/
-    if (*begin < 0 || *begin > 25)
+    if (*begin2 < 0 || *begin2 > 25)
       error(-10);
 
-    start_pos = *begin;
+    start_pos = *begin2;
+  }
+
+  void scramble() {
+    //TAKE START POSITION INTO ACCOUNT
   }
 };
+
+
+
+
+/*Improve this code by increasing inheritance where possible*/
