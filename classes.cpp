@@ -225,7 +225,7 @@ class Rotor : public PieceOfHardware
 {
 private:
    int notches[50];
-   int start_pos;
+   int rot_pos;
    int order;
 
 protected:
@@ -281,7 +281,7 @@ public:
     cerr << "rotor configuration valid" << endl;
 
 
-    /*set start_pos*/
+    /*set rot_pos*/
     file.open(pos_filename);
     istream_iterator<int> begin2(file), end2;
     for (int count=0; count < rotor_nb && begin2!=end2; ++begin2, count++);
@@ -290,23 +290,23 @@ public:
     if (*begin2 < 0 || *begin2 > 25)
       error(-10);
 
-    start_pos = *begin2;
+    rot_pos = *begin2;
 
-    cerr << "starting position for rotor[" << rotor_nb << "] is " << start_pos << endl;
+    cerr << "starting position for rotor[" << rotor_nb << "] is " << rot_pos << endl;
 
   }
 
-  int showStart_pos() {
-    return start_pos;
+  int showRot_pos() {
+    return rot_pos;
   }
 
   bool rotate(int rotor_nb) {
 
     cerr << "incrementing rotor position of rotor[" << rotor_nb << "]" << endl;
 
-    start_pos++;
+    rot_pos++;
     for (int i=0; notches[i] != sintinel; i++) {
-      if (start_pos == notches[i] && rotor_nb!=0) {
+      if (rot_pos == notches[i] && rotor_nb!=0) {
 
 	cerr << "notch met! left rotor will rotate too" << endl;
 
@@ -317,13 +317,32 @@ public:
   }
 
   void scramble() {
-    letterIndex = config_array[(letterIndex + start_pos) % 26];
+    letterIndex = config_array[(letterIndex + rot_pos) % 26];
   }
 
   int scramble(int number)  {
     assert(number>=0 && number<26);
-    return config_array[(number + start_pos) % 26];
+    return config_array[(number + rot_pos) % 26];
   }
+
+  // void scramble() {
+  //   for (int i=0; i<26; i++) {
+  //     if (config_array[i] == letterIndex) {
+  // 	letterIndex = config_array[(i + 25 - rot_pos) % 26];
+  // 	return;
+  //     }
+  //   }
+  //   error(-1);
+  // }
+
+  // int scramble(int number) {
+  //   for (int i=0; i<26; i++) {
+  //     if (config_array[i] == number) {
+  // 	return config_array[(i + 25 - rot_pos) % 26];
+  //     }
+  //   }
+  //   error(-1);
+  // }
 
   void inverseScramble() {     //for any valid config file, scramble() is a bijection on {0,.., 25}
     for (int i=0; i<26; i++) { //this inverse function of scramble() exists, and this is it

@@ -39,7 +39,7 @@ int main(int argc, char **argv)
       /*rightmost rotor rotates*/
       cerr << "rotor starting positions were: "; 
       for (int i=0; i<nb_rotors; i++)
-	cerr << rotor[i]->showStart_pos() << ", ";
+	cerr << rotor[i]->showRot_pos() << ", ";
       cerr << "then rightmost rotor rotates" << endl;
 
       for (int i=nb_rotors-1; i>0; rotor[i]->rotate(i), i--); 
@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
       cerr << "rotor starting positions are now: "; 
       for (int i=0; i<nb_rotors; i++)
-	cerr << rotor[i]->showStart_pos() << ", ";
+	cerr << rotor[i]->showRot_pos() << ", ";
       cerr << endl;
 
 
@@ -120,7 +120,8 @@ int main(int argc, char **argv)
 
 
       /*plugboard outputs letter corresponding to letterIndex*/
-
+      char ch = pb.showLetterIndex() + 65;
+      cout << ch ;
     }
 
 
