@@ -33,6 +33,12 @@ public:
     return letterIndex;
   }
 
+  void showConfig_array() {
+    for (int i=0; config_array[i]!=sintinel; i++)
+      cerr << config_array[i] << ", ";
+    cerr << endl;
+  }
+
   /* because we store index of letter rather than the char letter itself, and */
   /* because any two connected PieceOfHardware objects have a fixed "absolute position 0... */
   /* ...to absolute position 0, absolute postion 1 to absolute position 1, etc" mapping, */
@@ -54,8 +60,6 @@ public:
     int num, i=0;
     ifstream file;
     file.open(config_filename);
-
-    cerr << "opened input file" << endl;
 
     /*set config_array*/
     for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
@@ -91,26 +95,25 @@ public:
   /*if valid, assign index value to letter and return true; if fail (inc eof) return false*/
   bool get_letter_from_input_file()
   {
-    cerr << "getting input" << endl;
     int ascii;
     char input;
 
-    /*check that input is a capital letter, new line, carriage return, tab or space*/
-    cin >> ws;
-    while (!cin.fail()) {
-      cin >> input;
+    for (cin >> ws, cin >> input; !cin.eof(); cin >> ws, cin >> input) {
+
+      /*check that input is a capital letter, new line, carriage return, tab or space*/
       ascii = (int) input;
       if (ascii>91 || ascii<64) {
 	if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32)
-	  error(-13);
+	  error(-13, input);
 	//else letter is new line, carriage return, tab or space, so do nothing
       }                         
       else {
 	letterIndex = ascii - 65;
+	cerr << "getting input" << endl;
 	return true;
       }
     }
-    return false;        //reach here iif file has no more valid letters to give
+    return false;        //reach here iif end of file has been reached
   }
 
   void scramble() {
@@ -146,7 +149,7 @@ public:
 
   void inverseScramble() {     //for any valid config file, scramble() is a bijection on {0,.., 25}
     for (int i=0; i<26; i++) { //this inverse function of scramble() exists, and this is it
-      if (scramble(letterIndex) == i) {
+      if (scramble(i) == letterIndex) {
 	letterIndex = i;
 	return;
       }
@@ -293,9 +296,13 @@ public:
 
   }
 
-  void rotate(int rotor_nb) {
+  int showStart_pos() {
+    return start_pos;
+  }
 
-    cerr << "incrementing rotor position of rotor[" << i << "]" << endl;
+  bool rotate(int rotor_nb) {
+
+    cerr << "incrementing rotor position of rotor[" << rotor_nb << "]" << endl;
 
     start_pos++;
     for (int i=0; notches[i] != sintinel; i++) {
@@ -320,7 +327,7 @@ public:
 
   void inverseScramble() {     //for any valid config file, scramble() is a bijection on {0,.., 25}
     for (int i=0; i<26; i++) { //this inverse function of scramble() exists, and this is it
-      if (scramble(letterIndex) == i) {
+      if (scramble(i) == letterIndex) {
 	letterIndex = i;
 	return;
       }

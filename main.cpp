@@ -28,9 +28,10 @@ int main(int argc, char **argv)
   while (pb.get_letter_from_input_file()) 
     {                         //plugboard has now got a letterIndex
 
-
       /*plugboard scrambles letterIndex*/ 
-      cerr << "letterIndex was: " << pb.showLetterIndex() << ", then plugboard scrambles" << endl;
+      cerr << "letterIndex was: " << pb.showLetterIndex() << ", then plugboard scrambles with configuration:"; pb.showConfig_array();
+      
+
       pb.scramble();
       cerr << "letterIndex is now: " << pb.showLetterIndex() << endl;
 
@@ -38,7 +39,7 @@ int main(int argc, char **argv)
       /*rightmost rotor rotates*/
       cerr << "rotor starting positions were: "; 
       for (int i=0; i<nb_rotors; i++)
-	cerr << rotor[i]->start_pos << ", ";
+	cerr << rotor[i]->showStart_pos() << ", ";
       cerr << "then rightmost rotor rotates" << endl;
 
       for (int i=nb_rotors-1; i>0; rotor[i]->rotate(i), i--); 
@@ -46,7 +47,7 @@ int main(int argc, char **argv)
 
       cerr << "rotor starting positions are now: "; 
       for (int i=0; i<nb_rotors; i++)
-	cerr << rotor[i]->start_pos << ", ";
+	cerr << rotor[i]->showStart_pos() << ", ";
       cerr << endl;
 
 
@@ -56,17 +57,17 @@ int main(int argc, char **argv)
 
       /*each rotor with a left neighbour scrambles letterIndex & sends it to neighbour*/
       for (int i=nb_rotors-1; i>0; i--) {
-	cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << ", then rotor[" << i << "] scrambles" << endl;
+	cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << ", then rotor[" << i << "] scrambles with configuration:" << endl; rotor[i]->showConfig_array();
 
 	  rotor[i]->scramble();
 	  rotor[i-1]->setLetterIndex(rotor[i]->showLetterIndex());
 	
-	cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << <endl;
+	cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << endl;
       }    
 
 
       /*leftmost rotor scrambles letterIndex*/
-      cerr << "letterIndex was: " << rotor[0]->showLetterIndex() << ", then rotor[0] scrambles" << endl;
+      cerr << "letterIndex was: " << rotor[0]->showLetterIndex() << ", then rotor[0] scrambles with configuration:" << endl; rotor[0]->showConfig_array();
 
       rotor[0]->scramble();
 
@@ -77,7 +78,7 @@ int main(int argc, char **argv)
       rf.setLetterIndex(rotor[0]->showLetterIndex());
 
       /*reflector scrambles letterIndex*/
-      cerr << "letterIndex was: " << rf.showLetterIndex() << ", then reflector scrambles" <<endl;
+      cerr << "letterIndex was: " << rf.showLetterIndex() << ", then reflector scrambles with configuration:" <<endl; rf.showConfig_array();
 
       rf.scramble();
 
@@ -90,19 +91,19 @@ int main(int argc, char **argv)
 
       /*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
       for (int i=0; i<nb_rotors-1; i++) {
-	cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << ", then rotor[" << i << "] inverse scrambles" << endl;
+	cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << ", then rotor[" << i << "] inverse scrambles with configuration:" << endl; rotor[i]->showConfig_array();
 
 	  rotor[i]->inverseScramble();
 	  rotor[i+1]->setLetterIndex(rotor[i]->showLetterIndex());
 	
-	cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << <endl;
+	cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << endl;
       } 
 
 
       /*rightmost rotor inversely scrambles letterIndex*/
-      cerr << "letterIndex was: " << rotor[nb_rotors-1]->showLetterIndex() << ", then rightmost rotor inverse scrambles" << endl;
+      cerr << "letterIndex was: " << rotor[nb_rotors-1]->showLetterIndex() << ", then rightmost rotor inverse scrambles with configuration:" << endl; rotor[nb_rotors-1]->showConfig_array();
 
-      rotor[nb_rotors-1]->inveseScramble();
+      rotor[nb_rotors-1]->inverseScramble();
 
       cerr << "letterIndex is now: " << rotor[nb_rotors-1]->showLetterIndex() << endl;
 
@@ -111,7 +112,7 @@ int main(int argc, char **argv)
       pb.setLetterIndex(rotor[nb_rotors-1]->showLetterIndex());
 
       /*plugboard inversely scrambles letterIndex*/ 
-      cerr << "letterIndex was: " << pb.showLetterIndex() << endl;
+      cerr << "letterIndex was: " << pb.showLetterIndex() << ", then plugboard inversely scrambles with configuration:" << endl; pb.showConfig_array();
 
       pb.inverseScramble();
 

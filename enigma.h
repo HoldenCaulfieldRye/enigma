@@ -25,6 +25,8 @@
 /*function for errors*/
 void error(int code);
 
+void error(int code, char ch);
+
 /*checks that shell command (and its associated files) are valid*/
 void check(int argc, char **argv);
 

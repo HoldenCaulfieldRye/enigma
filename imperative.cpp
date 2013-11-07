@@ -51,6 +51,16 @@ void error(int code) {
   }
 }
 
+void error(int code, char ch) {
+  if (code==-13) {
+    cerr << "invalid input character: " << ch << " (a non capital letter was input)" << endl;
+    exit(-13);
+  }
+  else {
+    cerr << "Unknown error" << endl;
+    exit(-1);
+  }
+}
 
 /*checks that command line input is valid, and that config files have no non-numeric characters*/
 void check(int argc, char **argv)
