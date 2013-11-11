@@ -21,21 +21,14 @@ protected:
 
 public:
 
-  void print() { //DELETE THIS WHEN PROGRAM FINISHED
-    cerr << "letterIndex: " << letterIndex << endl;
-
-    cerr << "config_array: ";
-    for (int i=0; config_array[i]!=sintinel; cerr << config_array[i] << " ", i++);
-    cerr << endl;
-  }
-
   int showLetterIndex() {
     return letterIndex;
   }
 
   void showConfig_array() {
-    for (int i=0; config_array[i]!=sintinel; i++)
-      cerr << config_array[i] << ", ";
+    for (int i=0; config_array[i]!=sintinel; i++) {
+      cerr << config_array[i] << " ";
+    }
     cerr << endl;
   }
 
@@ -45,6 +38,45 @@ public:
   /* this function is very straightforward*/
   void setLetterIndex(int value) {
     letterIndex = value;
+  }
+
+  /*function for errors*/
+  void error(int code) {
+    switch(code) {
+    case -10: 
+      cerr << "invalid index (file contains a number that is not between 0 and 25)" << endl;
+      exit(-10);
+    case -11:
+      cerr << "non numeric character (in file)" << endl;
+      exit(-11);
+    case -12:
+      cerr << "insufficient number of parameters (given in command line)" << endl;
+      exit(-12);
+    case -13:
+      cerr << "invalid input character (a non capital letter was input)" << endl;
+      exit(-13);
+    case -14:
+      cerr << "impossible plugboard configuration (file attempts to connect a contact with itself or with multiple contacts)" << endl;
+      exit(-14);
+    case -15:
+      cerr << "incorrect number of plugboard parameters (should be an even number of them)" << endl;
+      exit(-15);
+    case -16:
+      cerr << "invalid rotor mapping (an input is not mapped or an input has multiple mappings" << endl;
+      exit(-16);
+    case -17:
+      cerr << "no rotor starting position (insufficient number of starting positions)" << endl;
+      exit(-17);
+    case -18:
+      cerr << "invalid reflector mapping (file attempts to connect a contact with itself or with multiple contacts)" << endl;
+      exit(-18);
+    case -19:
+      cerr << "incorrect number of reflector parameters (file does not contain exactly 13 pairs of numbers)" << endl;
+      exit(-19);
+    default:
+      cerr << "Unknown error" << endl;
+      exit(-1);
+    }
   }
 };
 
@@ -86,8 +118,6 @@ public:
     config_array[i] = sintinel;
     config_array_size = i;
     file.close();
-
-    cerr << "plugboard configuration valid" << endl;
   }
 
 
@@ -104,12 +134,11 @@ public:
       ascii = (int) input;
       if (ascii>91 || ascii<64) {
 	if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32)
-	  error(-13, input);
+	  error(-13);
 	//else letter is new line, carriage return, tab or space, so do nothing
       }                         
       else {
 	letterIndex = ascii - 65;
-	cerr << "getting input" << endl;
 	return true;
       }
     }
@@ -197,8 +226,6 @@ public:
     config_array[i] = sintinel;
     config_array_size = i;
     file.close();
-
-    cerr << "reflector configuration valid" << endl;
   }
 
 
@@ -232,7 +259,7 @@ protected:
 
 public:
 
-  Rotor(const char* config_filename, const char* pos_filename, int rotor_nb) 
+Rotor(const char* config_filename, const char* pos_filename, int rotor_nb) 
   {
     int num, i=0, k=0;
     ifstream file;
@@ -245,14 +272,14 @@ public:
 
       /*check that index is valid*/
       if (num < 0 || num > 25)
-	error(-10);
+        error(-10);
 
       config_array[i] = num;
 
       /*check no two identical entries in config_array*/
       for (int j=i-1; j>=0; j--) {
-	if (config_array[i]==config_array[j])
-	  error(-16);
+        if (config_array[i]==config_array[j])
+          error(-16);
       }
     }
 
@@ -267,7 +294,7 @@ public:
 
       /*check that index is valid*/
       if (num < 0 || num > 25)
-	error(-10);
+        error(-10);
 
       notches[k] = num;
     }
@@ -300,49 +327,33 @@ public:
     return rot_pos;
   }
 
-  bool rotate(int rotor_nb) {
+  void showNotches() {
+    for (int i=0; notches[i]!=sintinel; i++)
+      cerr << notches[i] << ", ";
+    cerr << endl;
+  }
 
-    cerr << "incrementing rotor position of rotor[" << rotor_nb << "]" << endl;
-
-    rot_pos++;
+  bool rotate() {
+    rot_pos = (rot_pos + 1) % 26;
     for (int i=0; notches[i] != sintinel; i++) {
-      if (rot_pos == notches[i] && rotor_nb!=0) {
-
-	cerr << "notch met! left rotor will rotate too" << endl;
-
-	 return true;   //even if leftmost rotor does rotate, need to return false so that...
+      if (rot_pos == notches[i]) {
+	cerr << "notch met!" << endl;
+	 return true;  //if leftmost rotor does rotate, 'true' will be returned but...
       }
-    }                   //...code in main won't try to run rotate(0) on left neighbour
+    }                  //...'i>0' condition in 'for' loop in main will fail anyway
     return false;
   }
 
   void scramble() {
-    letterIndex = config_array[(letterIndex + rot_pos) % 26];
+    // letterIndex = (config_array[(letterIndex + 26 - rot_pos) % 26] + rot_pos) % 26;
+    letterIndex = (config_array[(letterIndex + rot_pos) % 26] + 26 - rot_pos) % 26;
   }
 
   int scramble(int number)  {
     assert(number>=0 && number<26);
-    return config_array[(number + rot_pos) % 26];
+    // return (config_array[(number + 26 - rot_pos) % 26] + rot_pos) % 26;
+    return (config_array[(number + rot_pos) % 26] + 26 - rot_pos) % 26;
   }
-
-  // void scramble() {
-  //   for (int i=0; i<26; i++) {
-  //     if (config_array[i] == letterIndex) {
-  // 	letterIndex = config_array[(i + 25 - rot_pos) % 26];
-  // 	return;
-  //     }
-  //   }
-  //   error(-1);
-  // }
-
-  // int scramble(int number) {
-  //   for (int i=0; i<26; i++) {
-  //     if (config_array[i] == number) {
-  // 	return config_array[(i + 25 - rot_pos) % 26];
-  //     }
-  //   }
-  //   error(-1);
-  // }
 
   void inverseScramble() {     //for any valid config file, scramble() is a bijection on {0,.., 25}
     for (int i=0; i<26; i++) { //this inverse function of scramble() exists, and this is it
@@ -356,4 +367,5 @@ public:
 };
 
 
-/*Improve this code by increasing inheritance where possible*/
+/*Improve this code by increasing inheritance where possible, and moving imperative to base class
+also, make sure that you're picking up errors correctly with the error config files you created!*/
