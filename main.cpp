@@ -1,4 +1,5 @@
 #include<iostream>
+#include<fstream>
 #include<string>
 #include<cstring>
 #include<vector>
@@ -7,139 +8,116 @@
 using namespace std;
 
 #include"enigma.h"
-#include"classses.cpp"
 
-int main(int argc, char **argv) 
+int main(int argc, char **argv)
 {
-  cerr << "argc = " << argc;
+  /*check sufficient number of parameters*/
+  if (argc<3) {
+    cerr << "insufficient number of parameters (given in command line)" << endl;
+    exit(-12);
+  }
 
-  check(argc, argv);
+  /*if rotors, check that there is a rotor starting positions file*/
+  string lastArg = argv[argc-1];
+  if (lastArg.compare(lastArg.size() - 4, 4, ".pos") != 0 && argc>3) {
+      cerr << "no rotor starting position (insufficient number of starting positions)" << endl;
+      exit(-17);
+  }
+
+  /*check that all characters are numeric, new line, carriage return, tab or space*/
+  for (int i=1; i<argc && i<10; i++) {
+    char ch;
+    ifstream file;
+    file.open(argv[i]);
+
+    for (file.get(ch); !file.eof(); file.get(ch)) {
+      if ((int) ch < 48 || (int) ch > 57) {
+	if (ch != 9 && ch != 10 && ch != 13 && ch != 32) {
+	  cerr << "in file " << i << ": ";	 
+	  cerr << "non numeric character (in file)" << endl;
+	  exit(-11);
+	}
+      }
+      file.close();
+    }
+  }
 
   /*initialisation: declare objects and assign them to config files specified on command line.
-    reach here iif there are no errors.*/
+    reach here iif there are no errors*/
+  char outputLetter;
   const int nb_rotors = argc - 4;
   Plugboard pb(argv[1]);
   Reflector rf(argv[2]);
-
   Rotor **rotor;
   if (nb_rotors>0) {
-  rotor = new Rotor *[nb_rotors];
-  for (int i=0; i<nb_rotors; i++)
-    rotor[i] = new Rotor(argv[i+3], argv[argc-1], i);  //starting positions are set
+    rotor = new Rotor *[nb_rotors];
+    for (int i=0; i<nb_rotors; i++)
+      rotor[i] = new Rotor(argv[i+3], argv[argc-1], i);  //starting positions are set
   }
   else rotor=NULL;
 
-  /*while input file has valid letters to give, the process loops*/
-  while (pb.get_letter_from_input_file()) 
-    {                         //plugboard has now got a letterIndex
-
+  /*encryption: while input file has valid letters to give, the process loops*/
+  while (pb.getLetterFromInputFile()) 
+    {
       /*plugboard scrambles letterIndex*/ 
-      cerr << "letterIndex was: " << pb.showLetterIndex() << ", then plugboard scrambles with configuration:"; pb.showConfig_array();
-      
-
       pb.scramble();
-      cerr << "letterIndex is now: " << pb.showLetterIndex() << endl;
 
+      if (nb_rotors>0) {
+	/*rightmost rotor rotates*/
+	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--);
 
-  if (nb_rotors>0) {
-      /*rightmost rotor rotates*/
-      cerr << "rotor starting positions were: "; 
-      for (int i=0; i<nb_rotors; i++)
-        cerr << rotor[i]->showRot_pos() << ", ";
-      cerr << "then rightmost rotor rotates" << endl;
+	/*plugboard sends letterIndex to rightmost rotor*/
+	rotor[nb_rotors-1]->setLetterIndex(pb.showLetterIndex());
 
-      for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--); 
-      /*NB: if there is only one rotor in the setup, it can still rotate*/
-
-      cerr << "rotor starting positions are now: "; 
-      for (int i=0; i<nb_rotors; i++)
-        cerr << rotor[i]->showRot_pos() << ", ";
-      cerr << endl;
-
-
-      /*plugboard sends letterIndex to rightmost rotor*/
-      rotor[nb_rotors-1]->setLetterIndex(pb.showLetterIndex());
-
-
-      /*each rotor with a left neighbour scrambles letterIndex & sends it to neighbour*/
-      for (int i=nb_rotors-1; i>0; i--) {
-        cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << ", then rotor[" << i << "] scrambles with configuration:" << endl; rotor[i]->showConfig_array();
-
+	/*each rotor with a left neighbour scrambles letterIndex & sends it to neighbour*/
+	for (int i=nb_rotors-1; i>0; i--) {
           rotor[i]->scramble();
           rotor[i-1]->setLetterIndex(rotor[i]->showLetterIndex());
-        
-        cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << endl;
-      }    
+	}    
 
-      /*leftmost rotor scrambles letterIndex*/
-      cerr << "letterIndex was: " << rotor[0]->showLetterIndex() << ", then rotor[0] scrambles with configuration:" << endl; rotor[0]->showConfig_array();
+	/*leftmost rotor scrambles letterIndex*/
+	rotor[0]->scramble();
 
-      rotor[0]->scramble();
-
-      cerr << "letterIndex is now: " << rotor[0]->showLetterIndex() << endl;
-
-
-      /*leftmost rotor sends letterIndex to reflector*/
-      rf.setLetterIndex(rotor[0]->showLetterIndex());
-  }
-  else rf.setLetterIndex(pb.showLetterIndex());
+	/*leftmost rotor sends letterIndex to reflector*/
+	rf.setLetterIndex(rotor[0]->showLetterIndex());
+      }
+      /*if no rotors, plugboard leads straight to reflector*/
+      else rf.setLetterIndex(pb.showLetterIndex());
 
 
       /*reflector scrambles letterIndex*/
-      cerr << "letterIndex was: " << rf.showLetterIndex() << ", then reflector scrambles with configuration:" <<endl; rf.showConfig_array();
-
       rf.scramble();
 
-      cerr << "letterIndex is now: " << rf.showLetterIndex() << endl;
-
       if (nb_rotors>0) {
-      /*reflector sends letterIndex to leftmost rotor*/
-      rotor[0]->setLetterIndex(rf.showLetterIndex());
+	/*reflector sends letterIndex to leftmost rotor*/
+	rotor[0]->setLetterIndex(rf.showLetterIndex());
 
-
-      /*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
-      for (int i=0; i<nb_rotors-1; i++) {
-        cerr << "letterIndex was: " << rotor[i]->showLetterIndex() << ", then rotor[" << i << "] inverse scrambles with configuration:" << endl; rotor[i]->showConfig_array();
-
+	/*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
+	for (int i=0; i<nb_rotors-1; i++) {
           rotor[i]->inverseScramble();
           rotor[i+1]->setLetterIndex(rotor[i]->showLetterIndex());
-        
-        cerr << "letterIndex is now: " << rotor[i]->showLetterIndex() << endl;
-      } 
+	} 
 
+	/*rightmost rotor inversely scrambles letterIndex*/
+	rotor[nb_rotors-1]->inverseScramble();
 
-      /*rightmost rotor inversely scrambles letterIndex*/
-      cerr << "letterIndex was: " << rotor[nb_rotors-1]->showLetterIndex() << ", then rightmost rotor inverse scrambles with configuration:" << endl; rotor[nb_rotors-1]->showConfig_array();
-
-      rotor[nb_rotors-1]->inverseScramble();
-
-      cerr << "letterIndex is now: " << rotor[nb_rotors-1]->showLetterIndex() << endl;
-
-
-      /*rightmost rotor sends letterIndex to plugboard*/
-      pb.setLetterIndex(rotor[nb_rotors-1]->showLetterIndex());
+	/*rightmost rotor sends letterIndex to plugboard*/
+	pb.setLetterIndex(rotor[nb_rotors-1]->showLetterIndex());
       }
+      /*if no rotors, reflector leads straight to plugboard*/
       else pb.setLetterIndex(rf.showLetterIndex());
 
 
-      /*plugboard inversely scrambles letterIndex*/ 
-      cerr << "letterIndex was: " << pb.showLetterIndex() << ", then plugboard inversely scrambles with configuration:" << endl; pb.showConfig_array();
-
+      /*plugboard inversely scrambles letterIndex*/
       pb.inverseScramble();
 
-      cerr << "letterIndex is now: " << pb.showLetterIndex() << endl;
-
-
       /*plugboard outputs letter corresponding to letterIndex*/
-      char ch = pb.showLetterIndex() + 65;
-      cout << ch ;
+      outputLetter = pb.showLetterIndex() + 65;
+      cout << outputLetter ;
     }
-
 
   delete [] rotor;
   return 0;
 }
 
-
-/*change comments so that they make sense with "if(nb_rotors>0) {...}"
-ask Reuben whether it's worth improving the code by getting rid of ifs for rotors*/
+/*ask Reuben whether should specify destructors, whether using exit() is ok, and whether it's worth improving the code by getting rid of ifs for rotors*/
