@@ -17,13 +17,6 @@ int main(int argc, char **argv)
     exit(-12);
   }
 
-  /*if rotors, check that there is a rotor starting positions file*/
-  string lastArg = argv[argc-1];
-  if (lastArg.compare(lastArg.size() - 4, 4, ".pos") != 0 && argc>3) {
-      cerr << "no rotor starting position (insufficient number of starting positions)" << endl;
-      exit(-17);
-  }
-
   /*check that all characters are numeric, new line, carriage return, tab or space*/
   for (int i=1; i<argc && i<10; i++) {
     char ch;
@@ -42,8 +35,8 @@ int main(int argc, char **argv)
     }
   }
 
-  /*initialisation: declare objects and assign them to config files specified on command line.
-    reach here iif there are no errors*/
+  /*reach here iif there are no errors.
+    initialisation: declare objects and assign them to config files specified on command line*/
   char outputLetter;
   const int nb_rotors = argc - 4;
   Plugboard pb(argv[1]);

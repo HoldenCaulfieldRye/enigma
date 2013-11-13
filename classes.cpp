@@ -250,9 +250,14 @@ Rotor::Rotor(const char* configFilename, const char* posFilename, int rotor_nb) 
   notches[k] = sintinel;
 
   /*set rotPos*/
+  int count;
   file.open(posFilename);
   istream_iterator<int> begin2(file), end2;
-  for (int count=0; count < rotor_nb && begin2!=end2; ++begin2, count++);
+  for (count=0; count < rotor_nb && begin2!=end2; ++begin2, count++);
+
+  /*check that there is a starting position for the rotor*/
+  if (begin2==end2)
+    error(-17);
 
   /*check that index is valid*/
   if (*begin2 < 0 || *begin2 > 25)
