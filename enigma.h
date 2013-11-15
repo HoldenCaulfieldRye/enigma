@@ -26,8 +26,8 @@
 #define plugboard 0
 #define reflector 1
 
-
-class PieceOfHardware {      //base class for plugboard, reflector, rotor
+/*this base class is for machine component subclasses to inherit common fields and methods*/
+class PieceOfHardware {
  protected:
   int letterIndex;           //holds index value of letter to encrypt
   int configArray[27];
@@ -35,27 +35,29 @@ class PieceOfHardware {      //base class for plugboard, reflector, rotor
 
  public:
   PieceOfHardware();
-  PieceOfHardware(const char* configurationFilename, int hardwareType); //performs most error checks
-  void error(int errorCode); //function for outputting error descriptions and exiting
-  int showLetterIndex() const;
+  void build(const char* configurationFilename, int hardwareType); //performs most error checks
+  void showConfig(); //DELETE AFTERWARDS
+  int getLetterIndex() const;
   void setLetterIndex(int newLetterIndex);
 };
 
 
 class Plugboard : public PieceOfHardware {
  public:
-  Plugboard(const char* configurationFilename); //performs most error checks
+  Plugboard();
+  void build(const char* configurationFilename);
   bool getLetterFromInputFile();
-  void scramble();
+  int scramble();
   int scramble(int letterIndexToScramble);
-  void inverseScramble();
+  int inverseScramble();
 };
 
 
 class Reflector : public PieceOfHardware {
  public:
-  Reflector(const char* configurationFilename); //performs most error checks
-  void scramble();
+  Reflector();
+  void build(const char* configurationFilename);
+  int scramble();
 };
 
 
@@ -63,14 +65,30 @@ class Rotor : public PieceOfHardware {
 private:
    int notches[50];
    int rotPos;
-   int order;
 
- public:                                        //constructor performs most error checks
-   Rotor(const char* configurationFileName, const char* rotorPositionFilename, int rotorNumber);
-   int showRotPos() const;
-   void showNotches();
+ public: 
+   Rotor();
+   void build(const char* configurationFileName, const char* rotorPositionFilename, int rotorNumber);
+   int getRotPos() const;
    bool rotate();
-   void scramble();
+   int scramble();
    int scramble(int letterIndexToScramble);
-   void inverseScramble();
+   int inverseScramble();
+};
+
+/*this class is only instanciated once in the program, but it is still relevant, because it 
+indicates that there is a specific, "private" machine mechanism*/
+class Enigma {
+ private:
+  int nb_rotors;
+  Plugboard pb;
+  Reflector rf;
+  Rotor **rotor;
+
+ public:
+  Enigma();
+  static void error(int errorCode);   //function for outputting error descriptions and exiting
+  void build(int argc, char** argv);
+  void encrypt();
+  ~Enigma();
 };
