@@ -34,7 +34,7 @@ class PieceOfHardware {
   PieceOfHardware();
   PieceOfHardware(Enigma* _machine);
   bool build(const char* configurationFilename, int hardwareType); //performs most error checks
-  void setLetterIndex(int newLetterIndex);
+  void setLetterIndex(int const &newLetterIndex);
 };
 
 

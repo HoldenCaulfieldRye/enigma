@@ -249,7 +249,7 @@ bool PieceOfHardware::build(const char* configFilename, int type)
 }
 
 /*storing the index value of the letter rather than the letter itself is great because it keeps this function very simple*/
-void PieceOfHardware::setLetterIndex(int value) {
+void PieceOfHardware::setLetterIndex(int const &value) {
   assert(value<26 && value>=0);
   letterIndex = value;
 }
