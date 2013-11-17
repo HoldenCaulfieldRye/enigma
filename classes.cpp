@@ -308,8 +308,7 @@ int PieceOfHardware::getLetterIndex() const {
   return letterIndex;
 }
 
-/* storing the index value of the letter rather than the letter itself is great because it 
-   keeps this function very simple */
+/* storing the index value of the letter rather than the letter itself is great because it keeps this function very simple*/
 void PieceOfHardware::setLetterIndex(int value) {
   assert(value<26 && value>=0);
   letterIndex = value;
@@ -326,8 +325,7 @@ bool Plugboard::build(const char* configFilename) {
   return PieceOfHardware::build(configFilename, plugboard);
 }
 
-/*sets letter: reads in one character from inFile, performs checks, ignores if space etc
-  if valid, assigns index value to letter and returns true; if fail (inc eof) returns false*/
+/*sets letter: reads in one character from inFile, performs checks, ignores if space etc if valid, assigns index value to letter and returns true; if fail (inc eof) returns false*/
 bool Plugboard::getLetterFromInputFile() {
   int ascii;
   char input;
@@ -444,8 +442,7 @@ bool Rotor::build(const char* configFilename, const char* posFilename, int rotor
     }
   }
 
-  /*check that we have every input mapped*/
-  /*reach here iif no identical configArray entries, so merely need to check size)*/
+  /*check that we have every input mapped. reach here iif no identical configArray entries, so merely need to check size)*/
   if (i != 26) {
     machine->errorDescription(7);
     return false;
