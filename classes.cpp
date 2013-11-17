@@ -70,10 +70,7 @@ int Enigma::getErrorCode() const {
   return errorCode;
 }
 
-/*checks for some errors in configuration files and configures machine components.
-  configuration files are read through char-by-char to first make sure that only numeric
-  and space/tab/NL characters are present. files will then be read int-by-int by component
-  specific build methods to check for all other errors.*/
+/*checks for some errors in configuration files and configures machine components. configuration files are read through char-by-char to first make sure that only numeric and space/tab/NL characters are present. files will then be read int-by-int by component specific build methods to check for all other errors.*/
 bool Enigma::build(int argc, char** argv) {
 
   cerr << "beginning of build enigma" << endl;
@@ -92,9 +89,7 @@ bool Enigma::build(int argc, char** argv) {
 
     cerr << "looking in a file" << endl;
 
-    /*if on an OS that supports POSIX, use 'stat' system call to check that arg is a regular file. on linux,
-      if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' 
-      endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
+    /*if on an OS that supports POSIX, use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
 #ifndef _WIN32
     fileStatus = stat(argv[i], &fileInfo);
     if (fileStatus!=0) {
@@ -111,8 +106,7 @@ bool Enigma::build(int argc, char** argv) {
     }
 #endif
 
-    /*if on windows, haven't yet checked that a file exists. Regardless of the OS, still need to check that
-      the file can be opened.*/
+    /*if on windows, haven't yet checked that a file exists. Regardless of the OS, still need to check that the file can be opened.*/
     file.open(argv[i]);
     if (file.fail()) {
       errorDescription(11);
@@ -159,79 +153,77 @@ bool Enigma::encrypt() {
   char outputLetter;
 
   /*encryption: while input file has valid letters to give, the process loops*/
-  int x = 0;
 
   while (pb.getLetterFromInputFile()) //loops ends if error input invalid or eof
     {
-      cerr << x << ", "; x++;
-      cerr << nb_rotors << endl;
+      cerr << pb.getLetterIndex() << "(input) -> ";
 
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
 	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--);
 
-	cerr << x << ", "; x++;
 
 	/*plugboard sends letterIndex to rightmost rotor*/
 	rotor[nb_rotors-1]->setLetterIndex(pb.scramble());
 
-	cerr << x << ", "; x++;
+	cerr << rotor[nb_rotors-1]->getLetterIndex() << "(pb) -> ";
 
 	/*each rotor with a left neighbour scrambles letterIndex & sends it to neighbour*/
 	for (int i=nb_rotors-1; i>0; i--) {
 
-	  cerr << x << ", "; x++;
-
 	  rotor[i-1]->setLetterIndex(rotor[i]->scramble());
-	}    
 
-	cerr << x << ", "; x++;
+	  cerr << rotor[i-1]->getLetterIndex() << "(rot" << i << ") -> ";
+	}    
 
 	/*leftmost rotor sends letterIndex to reflector*/
 	rf.setLetterIndex(rotor[0]->scramble());
 
-	cerr << x << ", "; x++;
+       cerr << rf.getLetterIndex() << "(rot0) -> ";
+
       }
       /*if no rotors, plugboard leads straight to reflector*/
-      else rf.setLetterIndex(pb.scramble());
+      else  { rf.setLetterIndex(pb.scramble());
 
-      cerr << x << ", "; x++;
+	 cerr << rf.getLetterIndex() << "(pb) -> "; }
 
       if (nb_rotors>0) {
 	/*reflector sends letterIndex to leftmost rotor*/
 	rotor[0]->setLetterIndex(rf.scramble());
 
-	cerr << x << ", "; x++;
+       cerr << rotor[0]->getLetterIndex() << "(rf) -> ";
+
 
 	/*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
 	for (int i=0; i<nb_rotors-1; i++) {
 
 	  rotor[i+1]->setLetterIndex(rotor[i]->inverseScramble());
+
+	  cerr << rotor[i+1]->getLetterIndex() << "(rot" << i << ") -> ";
 	} 
 
 	/*rightmost rotor sends letterIndex to plugboard*/
 	pb.setLetterIndex(rotor[nb_rotors-1]->inverseScramble());
 
-	cerr << x << ", "; x++;
+	cerr << pb.getLetterIndex() << "(rot" << nb_rotors-1 << ") -> ";
 
       }
       /*if no rotors, reflector leads straight to plugboard*/
-      else pb.setLetterIndex(rf.scramble());
+      else { pb.setLetterIndex(rf.scramble());
 
-      cerr << x << ", "; x++;
-
+	 cerr << pb.getLetterIndex() << "(rf) -> "; }
 
       /*plugboard inversely scrambles letterIndex*/
       pb.inverseScramble();
 
-      cerr << x << ", "; x++;
+       cerr << pb.getLetterIndex() << "(pb) -> ";
 
       /*plugboard outputs letter corresponding to letterIndex*/
       outputLetter = pb.getLetterIndex() + 65;
 
       cerr << "outputting " << outputLetter << endl;
 
-      cout << outputLetter;
+       cout << outputLetter;
     }
 
   cerr << "finished encryption" << endl;
@@ -260,7 +252,6 @@ PieceOfHardware::PieceOfHardware(Enigma* _machine) {
   letterIndex = 0;                                  //holds index value of letter to encrypt.
   for (int i=0; i<27; i++)
     configArray[i] = 0;
-  configArraySize = 0;
 }
 
 void PieceOfHardware::showConfig() const {
@@ -309,7 +300,6 @@ bool PieceOfHardware::build(const char* configFilename, int type)
   }
 
   configArray[i] = sintinel;                       //reach here iif config perfectly valid.
-  configArraySize = i;
   file.close();
   return true;
 }
@@ -346,8 +336,11 @@ bool Plugboard::getLetterFromInputFile() {
        !cin.eof(); 
        cin >> ws, cin >> input) {
 
+    cerr << input << " -> ";
+
     /*check that input is a capital letter, new line, carriage return, tab or space*/
     ascii = (int) input;
+
     if (ascii>91 || ascii<64) {
       if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
 	machine->errorDescription(2);
@@ -364,7 +357,7 @@ bool Plugboard::getLetterFromInputFile() {
 
 int Plugboard::scramble(int number) const {
   assert(number>=0 && number<26);
-  for (int i=0; i<configArraySize; i++) {
+  for (int i=0; configArray[i] != sintinel; i++) {
     if (configArray[i]==number) {
       if (i % 2 == 0) {                 //reach here iif i is even, so letter(configArray[i]) 
 	return configArray[i+1];        //and letter(configArray[i+1]) are connected.
@@ -379,14 +372,15 @@ int Plugboard::scramble() {
   return scramble(letterIndex);
 }
 
-int Plugboard::inverseScramble() {      //for any valid config file, scramble() is a
+void Plugboard::inverseScramble() {      //for any valid config file, scramble() is a
   for (int i=0; i<26; i++) {            //bijection on {0,.., 25}.
     if (scramble(i) == letterIndex) {   //so inverse function of scramble() exists; this is it.
-      return i;
+      letterIndex = i;
+      return;
     }
   }
   machine->errorDescription(-1);        //should not ever reach here.
-  return -1;
+  letterIndex = -1;
 }
 /*END OF PLUGBOARD DEFINITIONS*/
 
@@ -400,7 +394,7 @@ bool Reflector::build(const char* configFilename) {
 }
 
 int Reflector::scramble() {
-  for (int i=0; i<configArraySize; i++) {
+  for (int i=0; configArray[i] != sintinel; i++) {
     if (configArray[i]==letterIndex) {
       if (i % 2 == 0) {                 //i is even, so letter(configArray[i]) and
 	return configArray[i+1];        //letter(configArray[i+1]) are connected. 
@@ -472,7 +466,6 @@ bool Rotor::build(const char* configFilename, const char* posFilename, int rotor
 
   /*reach here iif rotor config perfectly valid*/
   configArray[i] = sintinel;
-  configArraySize = i;
   file.close();
   notches[k] = sintinel;
 
@@ -507,7 +500,7 @@ bool Rotor::rotate() {
   rotPos = (rotPos + 1) % 26;
   for (int i=0; notches[i] != sintinel; i++) {
     if (rotPos == notches[i]) {
-      cerr << "notch met!" << endl;
+      cerr << "notch met!" << " -> ";
       return true;                         //if leftmost rotor does rotate, 'true' will be returned but
     }                                      //'i>0' condition in 'for' loop in main will fail anyway.
   }    
@@ -525,9 +518,8 @@ int Rotor::scramble() {
 
 int Rotor::inverseScramble() {
   for (int i=0; i<26; i++) { 
-    if (scramble(i) == letterIndex) {
+    if (scramble(i) == letterIndex)
       return i;
-    }
   }
   machine->errorDescription(-1);           //should not ever reach here.
   return -1;

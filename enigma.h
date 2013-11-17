@@ -1,5 +1,4 @@
-/*sentinel for integer array, intended for arrays containing configuration information. 
-  this is a good value because -1 could never appear as a 'proper' configuration value. */
+/*sentinel for integer array, intended for arrays containing configuration information. takes up less memory than remembering array size. -1 is a good value because -1 could never appear as a 'proper' configuration value*/
 #define sintinel -1    
 
 /* error codes  */
@@ -29,14 +28,13 @@ class PieceOfHardware {
   Enigma* machine;
   int letterIndex;           //holds index value of letter to encrypt
   int configArray[27];
-  int configArraySize;
 
  public:
   PieceOfHardware();
   PieceOfHardware(Enigma* _machine);
   bool build(const char* configurationFilename, int hardwareType); //performs most error checks
   void showConfig() const; //DELETE AFTERWARDS
-  int getLetterIndex() const;
+  int getLetterIndex() const; //DELETE AFTERWARDS, NEED ONLY BE IN PLUGBOARD
   void setLetterIndex(int newLetterIndex);
 };
 
@@ -49,7 +47,7 @@ class Plugboard : public PieceOfHardware {
   bool getLetterFromInputFile();
   int scramble();
   int scramble(int letterIndexToScramble) const;
-  int inverseScramble();
+  void inverseScramble();
 };
 
 
