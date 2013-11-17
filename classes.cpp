@@ -121,15 +121,14 @@ bool Enigma::build(int argc, char** argv) {
 
   /*reach here iif there are no errors. configuration can begin*/
   nb_rotors = argc - 4;
-  if( !pb.build(argv[1]) )      return false;
-  if( !rf.build(argv[2]) )      return false;
+  if ( !pb.build(argv[1]) )     return false;
+  if ( !rf.build(argv[2]) )     return false;
   if (nb_rotors>0) {
     rotor = new Rotor *[nb_rotors];
     for (int i=0; i<nb_rotors; i++) {
       rotor[i] = new Rotor(this);
-      cerr << "rotor created" << endl;
-      if(!rotor[i]->build(argv[i+3], argv[argc-1], i)) //starting positions are set.
-	                        return false;
+      if( !rotor[i]->build(argv[i+3], argv[argc-1], i) ) //starting positions are set.
+	return false;
     }  
   }
   return true;
@@ -139,7 +138,7 @@ bool Enigma::encrypt() {
   char outputLetter;
 
   /*encryption: while input file has valid letters to give, the process loops*/
-  while (pb.getLetterFromInputFile())                  //loop ends if error input invalid or eof
+  while (pb.getLetterFromInputFile())                  //loop ends if error input invalid or eof.
     {
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
@@ -154,61 +153,35 @@ bool Enigma::encrypt() {
 
 	/*leftmost rotor sends letterIndex to reflector*/
 	rf.setLetterIndex(rotor[0]->scramble());
-
-	//cerr << rf.getLetterIndex() << "(rot0) -> ";
-
       }
       /*if no rotors, plugboard leads straight to reflector*/
-      else  { rf.setLetterIndex(pb.scramble());
-
-	//cerr << rf.getLetterIndex() << "(pb) -> "; 
-      }
+      else rf.setLetterIndex(pb.scramble());
 
       if (nb_rotors>0) {
 	/*reflector sends letterIndex to leftmost rotor*/
 	rotor[0]->setLetterIndex(rf.scramble());
 
-	//cerr << rotor[0]->getLetterIndex() << "(rf) -> ";
-
-
 	/*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
-	for (int i=0; i<nb_rotors-1; i++) {
-
+	for (int i=0; i<nb_rotors-1; i++)
 	  rotor[i+1]->setLetterIndex(rotor[i]->inverseScramble());
-
-	  //cerr << rotor[i+1]->getLetterIndex() << "(rot" << i << ") -> ";
-	} 
 
 	/*rightmost rotor sends letterIndex to plugboard*/
 	pb.setLetterIndex(rotor[nb_rotors-1]->inverseScramble());
-
-	//cerr << pb.getLetterIndex() << "(rot" << nb_rotors-1 << ") -> ";
-
       }
       /*if no rotors, reflector leads straight to plugboard*/
-      else { pb.setLetterIndex(rf.scramble());
-
-	//cerr << pb.getLetterIndex() << "(rf) -> "; 
-      }
+      else pb.setLetterIndex(rf.scramble());
 
       /*plugboard inversely scrambles letterIndex*/
       pb.inverseScramble();
 
-      //cerr << pb.getLetterIndex() << "(pb) -> ";
-
       /*plugboard outputs letter corresponding to letterIndex*/
       outputLetter = pb.getLetterIndex() + 65;
-
-      //cerr << "outputting " << outputLetter << endl;
-
       cout << outputLetter;
     }
 
-  //cerr << "finished encryption" << endl;
-
   if (errorCode!=0) 
-    return false;                                   //loop above ended because of invalid input
-  else return true;                                 //loop above ended because of eof
+    return false;                             //reach here iif invalid input.
+  else return true;                           //reach here iif eof reached.
 }
 
 Enigma::~Enigma() {
@@ -216,12 +189,10 @@ Enigma::~Enigma() {
     for (int i=nb_rotors-1; i>=0; i--) {
       delete [] rotor[i];
       rotor[i] = NULL;
-      cerr << "deleted rotor" << endl;
     }
     delete [] rotor;
     rotor = NULL;
   }
-  else cerr << "rotor deletion not executed" << endl;
 }
 /*END OF ENIGMA DEFINITIONS*/
 
@@ -231,16 +202,10 @@ PieceOfHardware::PieceOfHardware() {}
 
 PieceOfHardware::PieceOfHardware(Enigma* _machine) {
   machine = _machine;
-  letterIndex = 0;                                  //holds index value of letter to encrypt.
+  letterIndex = 0;
   for (int i=0; i<27; i++)
     configArray[i] = 0;
 }
-
-// void PieceOfHardware::showConfig() const {
-//   for (int i=0; configArray[i]!=sintinel; i++)
-//     cerr << configArray[i] << ", ";
-//     cerr << endl;
-// }
 
 bool PieceOfHardware::build(const char* configFilename, int type)
 {
@@ -254,41 +219,36 @@ bool PieceOfHardware::build(const char* configFilename, int type)
 
     /*check that index is valid*/
     if (num < 0 || num > 25) { 
-      machine->errorDescription(3);
-      return false;
+      machine->errorDescription(3);     return false;
     }
     configArray[i] = num;
 
     /*check no two identical entries in configArray*/
     for (int j=i-1; j>=0; j--) {
       if (configArray[i]==configArray[j]) {
-	if (type==plugboard)
-	  machine->errorDescription(5);
-	else machine->errorDescription(9);
-	return false;
+	if (type==plugboard) {
+	  machine->errorDescription(5); return false;
+	}
+	else {
+	  machine->errorDescription(9); return false;
+	}
       }
     }
   }
 
-  if (type==plugboard && i%2!=0) {                 //check for an even number of plugboard parameters.
-    machine->errorDescription(6);
-    return false;
+  if (type==plugboard && i%2!=0) {            //check for an even number of plugboard parameters.
+    machine->errorDescription(6);       return false;
   }
-  if (type==reflector && i != 26) {                //check for 13 pairs of reflector parameter numbers.
-    machine->errorDescription(10);
-    return false;
+  if (type==reflector && i != 26) {           //check for 13 pairs of reflector parameter numbers.
+    machine->errorDescription(10);      return false;
   }
 
-  configArray[i] = sintinel;                       //reach here iif config perfectly valid.
+  configArray[i] = sintinel;                  //reach here iif config perfectly valid.
   file.close();
   return true;
 }
 
-int PieceOfHardware::getLetterIndex() const {
-  return letterIndex;
-}
-
-/* storing the index value of the letter rather than the letter itself is great because it keeps this function very simple*/
+/*storing the index value of the letter rather than the letter itself is great because it keeps this function very simple*/
 void PieceOfHardware::setLetterIndex(int value) {
   assert(value<26 && value>=0);
   letterIndex = value;
@@ -298,7 +258,6 @@ void PieceOfHardware::setLetterIndex(int value) {
 
 /*PLUGBOARD DEFINITIONS*/
 Plugboard::Plugboard() {}
-
 Plugboard::Plugboard(Enigma *_machine) : PieceOfHardware::PieceOfHardware(_machine) {}
 
 bool Plugboard::build(const char* configFilename) {
@@ -310,19 +269,14 @@ bool Plugboard::getLetterFromInputFile() {
   int ascii;
   char input;
 
-  for (cin >> ws, cin >> input; 
+  for (cin >> ws, cin >> input, ascii = (int) input; 
        !cin.eof(); 
-       cin >> ws, cin >> input) {
-
-    //cerr << input << " -> ";
+       cin >> ws, cin >> input, ascii = (int) input) {
 
     /*check that input is a capital letter, new line, carriage return, tab or space*/
-    ascii = (int) input;
-
     if (ascii>91 || ascii<64) {
       if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
-	machine->errorDescription(2);
-	return false;
+	machine->errorDescription(2); return false;
       }                                 //else letter is new line, carriage return, tab or space
     }                                   //so do nothing.       
     else {
@@ -350,7 +304,7 @@ int Plugboard::scramble() {
   return scramble(letterIndex);
 }
 
-void Plugboard::inverseScramble() {      //for any valid config file, scramble() is a
+void Plugboard::inverseScramble() {     //for any valid config file, scramble() is a
   for (int i=0; i<26; i++) {            //bijection on {0,.., 25}.
     if (scramble(i) == letterIndex) {   //so inverse function of scramble() exists; this is it.
       letterIndex = i;
@@ -359,6 +313,10 @@ void Plugboard::inverseScramble() {      //for any valid config file, scramble()
   }
   machine->errorDescription(-1);        //should not ever reach here.
   letterIndex = -1;
+}
+
+int Plugboard::getLetterIndex() const {
+  return letterIndex;
 }
 /*END OF PLUGBOARD DEFINITIONS*/
 
@@ -407,8 +365,7 @@ bool Rotor::build(const char* configFilename, const char* posFilename, int rotor
 
     /*check that index is valid*/
     if (num < 0 || num > 25) {
-      machine->errorDescription(3);
-      return false;
+      machine->errorDescription(3);   return false;
     }
 
     configArray[i] = num;
@@ -416,16 +373,14 @@ bool Rotor::build(const char* configFilename, const char* posFilename, int rotor
     /*check no two identical entries in configArray*/
     for (int j=i-1; j>=0; j--) {
       if (configArray[i]==configArray[j]) {
-	machine->errorDescription(7);
-	return false;
+	machine->errorDescription(7); return false;
       }
     }
   }
 
   /*check that we have every input mapped. reach here iif no identical configArray entries, so merely need to check size)*/
   if (i != 26) {
-    machine->errorDescription(7);
-    return false;
+    machine->errorDescription(7);     return false;
   }
 
   /*set notches, starting from where we left off*/
@@ -434,8 +389,7 @@ bool Rotor::build(const char* configFilename, const char* posFilename, int rotor
 
     /*check that index is valid*/
     if (num < 0 || num > 25) {
-      machine->errorDescription(3);
-      return false;
+      machine->errorDescription(3);   return false;
     }
 
     notches[k] = num;
@@ -454,18 +408,15 @@ bool Rotor::build(const char* configFilename, const char* posFilename, int rotor
 
   /*check that there is a starting position for the rotor*/
   if (begin2==end2) {
-    machine->errorDescription(8);
-    return false;
+    machine->errorDescription(8);     return false;
   }
 
   /*check that index is valid*/
   if (*begin2 < 0 || *begin2 > 25) {
-    machine->errorDescription(3);
-    return false;
+    machine->errorDescription(3);     return false;
   }
-  rotPos = *begin2;
 
-  //cerr << "one rotor built successfully" << endl;
+  rotPos = *begin2;
   return true;
 }
 
@@ -477,9 +428,8 @@ bool Rotor::rotate() {
   rotPos = (rotPos + 1) % 26;
   for (int i=0; notches[i] != sintinel; i++) {
     if (rotPos == notches[i]) {
-      //cerr << "notch met!" << " -> ";
-      return true;                         //if leftmost rotor does rotate, 'true' will be returned but
-    }                                      //'i>0' condition in 'for' loop in main will fail anyway.
+       return true;                       //if leftmost rotor does rotate, 'true' will be returned but
+    }                                     //'i>0' condition in 'for' loop in main will fail anyway.
   }    
   return false;
 }
@@ -498,9 +448,7 @@ int Rotor::inverseScramble() {
     if (scramble(i) == letterIndex)
       return i;
   }
-  machine->errorDescription(-1);           //should not ever reach here.
+  machine->errorDescription(-1);          //should not ever reach here.
   return -1;
 }
 /*END OF ROTOR DEFINITIONS*/
-
-/*make sure that you're picking up errors correctly with the error config files you created!*/

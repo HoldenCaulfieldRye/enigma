@@ -34,7 +34,6 @@ class PieceOfHardware {
   PieceOfHardware();
   PieceOfHardware(Enigma* _machine);
   bool build(const char* configurationFilename, int hardwareType); //performs most error checks
-  int getLetterIndex() const; //DELETE AFTERWARDS, NEED ONLY BE IN PLUGBOARD
   void setLetterIndex(int newLetterIndex);
 };
 
@@ -48,6 +47,7 @@ class Plugboard : public PieceOfHardware {
   int scramble();
   int scramble(int letterIndexToScramble) const;
   void inverseScramble();
+  int getLetterIndex() const;
 };
 
 
