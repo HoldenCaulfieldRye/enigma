@@ -6,7 +6,10 @@
 #include<sstream>
 #include<string>
 #include<cassert>
+
+#ifndef _WIN32
 #include<sys/stat.h>
+#endif
 
 using namespace std;
 
@@ -25,13 +28,12 @@ Enigma::Enigma() : pb(this), rf(this) {
 /*function for errors*/
 void Enigma::errorDescription(int code) {
   switch(code) {
-  case 0:
-    return;
+  case 0: return;
   case 3:
     cerr << "invalid index (a number in configuration file is not between 0 and 25)" << endl;
     errorCode = 3;  return;
   case 4:
-    cerr << "non numeric character (in configuration file)" << endl; 
+    cerr << "non numeric character" << endl; 
     errorCode = 4;  return;
   case 1:
     cerr << "insufficient number of parameters (given in command line)" << endl; 
@@ -46,7 +48,7 @@ void Enigma::errorDescription(int code) {
     cerr << "incorrect number of plugboard parameters (should be an even number of them)" << endl;
     errorCode = 6;  return;
   case 7:
-    cerr << "invalid rotor mapping (an input is not mapped or an input has multiple mappings" << endl; 
+    cerr << "invalid rotor mapping (an input is not mapped or an input has multiple mappings)" << endl; 
     errorCode = 7;  return;
   case 8:
     cerr << "no rotor starting position (insufficient number of starting positions)" << endl;
@@ -73,12 +75,9 @@ int Enigma::getErrorCode() const {
 /*checks for some errors in configuration files and configures machine components. configuration files are read through char-by-char to first make sure that only numeric and space/tab/NL characters are present. files will then be read int-by-int by component specific build methods to check for all other errors.*/
 bool Enigma::build(int argc, char** argv) {
 
-  cerr << "beginning of build enigma" << endl;
-
   /*check sufficient number of parameters*/
   if (argc<3) {
-    errorDescription(1);
-    return false;
+    errorDescription(1);        return false;
   }
 
   for (int i=1; i<argc && i<10; i++) {
@@ -87,21 +86,17 @@ bool Enigma::build(int argc, char** argv) {
     char ch;
     ifstream file;
 
-    cerr << "looking in a file" << endl;
-
-    /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
+     /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
 #ifndef _WIN32
     fileStatus = stat(argv[i], &fileInfo);
     if (fileStatus!=0) {
       cerr << "'"<< argv[i] << "' is a nonexistent pathname" << endl;
-      errorDescription(11);
-      return false;
+      errorDescription(11);     return false;
     }
     else {
       if (!S_ISREG(fileInfo.st_mode)) {
 	cerr << "'" << argv[i] << "' does not point to a regular file" << endl;
-	errorDescription(11);
-	return false;
+	errorDescription(11);   return false;
       }
     }
 #endif
@@ -109,8 +104,7 @@ bool Enigma::build(int argc, char** argv) {
     /*still need to check that the file can be opened.*/
     file.open(argv[i]);
     if (file.fail()) {
-      errorDescription(11);
-      return false;
+      errorDescription(11);     return false;
     }
 
     /*check that all characters are numeric, new line, carriage return, tab or space*/
@@ -118,8 +112,7 @@ bool Enigma::build(int argc, char** argv) {
       if ((int) ch < 48 || (int) ch > 57) {
 	if (ch != 9 && ch != 10 && ch != 13 && ch != 32) {
 	  cerr << "in file " << i << ": ";
-	  errorDescription(4);
-	  return false;
+	  errorDescription(4);  return false;
 	}
       }
     }
@@ -127,71 +120,55 @@ bool Enigma::build(int argc, char** argv) {
   }
 
   /*reach here iif there are no errors. configuration can begin*/
-  cerr << "initialising" << endl;
-
   nb_rotors = argc - 4;
-  if(!pb.build(argv[1]) || !rf.build(argv[2]))
-    return false;
+  if( !pb.build(argv[1]) )      return false;
+  if( !rf.build(argv[2]) )      return false;
   if (nb_rotors>0) {
     rotor = new Rotor *[nb_rotors];
     for (int i=0; i<nb_rotors; i++) {
       rotor[i] = new Rotor(this);
-      if(!rotor[i]->build(argv[i+3], argv[argc-1], i))  //starting positions are set.
-	return false;
-      rotor[i]->showConfig();    //DELETE AFTERWARDS
+      cerr << "rotor created" << endl;
+      if(!rotor[i]->build(argv[i+3], argv[argc-1], i)) //starting positions are set.
+	                        return false;
     }  
   }
-
-  cerr << "initialisation successful" << endl;
-
   return true;
 }
 
 bool Enigma::encrypt() {
-  cerr << "beginning encryption" << endl;
-
   char outputLetter;
 
   /*encryption: while input file has valid letters to give, the process loops*/
-
-  while (pb.getLetterFromInputFile()) //loops ends if error input invalid or eof
+  while (pb.getLetterFromInputFile())                  //loop ends if error input invalid or eof
     {
-      cerr << pb.getLetterIndex() << "(input) -> ";
-
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
 	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--);
 
-
 	/*plugboard sends letterIndex to rightmost rotor*/
 	rotor[nb_rotors-1]->setLetterIndex(pb.scramble());
 
-	cerr << rotor[nb_rotors-1]->getLetterIndex() << "(pb) -> ";
-
 	/*each rotor with a left neighbour scrambles letterIndex & sends it to neighbour*/
-	for (int i=nb_rotors-1; i>0; i--) {
-
+	for (int i=nb_rotors-1; i>0; i--)
 	  rotor[i-1]->setLetterIndex(rotor[i]->scramble());
-
-	  cerr << rotor[i-1]->getLetterIndex() << "(rot" << i << ") -> ";
-	}    
 
 	/*leftmost rotor sends letterIndex to reflector*/
 	rf.setLetterIndex(rotor[0]->scramble());
 
-       cerr << rf.getLetterIndex() << "(rot0) -> ";
+	//cerr << rf.getLetterIndex() << "(rot0) -> ";
 
       }
       /*if no rotors, plugboard leads straight to reflector*/
       else  { rf.setLetterIndex(pb.scramble());
 
-	 cerr << rf.getLetterIndex() << "(pb) -> "; }
+	//cerr << rf.getLetterIndex() << "(pb) -> "; 
+      }
 
       if (nb_rotors>0) {
 	/*reflector sends letterIndex to leftmost rotor*/
 	rotor[0]->setLetterIndex(rf.scramble());
 
-       cerr << rotor[0]->getLetterIndex() << "(rf) -> ";
+	//cerr << rotor[0]->getLetterIndex() << "(rf) -> ";
 
 
 	/*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
@@ -199,34 +176,35 @@ bool Enigma::encrypt() {
 
 	  rotor[i+1]->setLetterIndex(rotor[i]->inverseScramble());
 
-	  cerr << rotor[i+1]->getLetterIndex() << "(rot" << i << ") -> ";
+	  //cerr << rotor[i+1]->getLetterIndex() << "(rot" << i << ") -> ";
 	} 
 
 	/*rightmost rotor sends letterIndex to plugboard*/
 	pb.setLetterIndex(rotor[nb_rotors-1]->inverseScramble());
 
-	cerr << pb.getLetterIndex() << "(rot" << nb_rotors-1 << ") -> ";
+	//cerr << pb.getLetterIndex() << "(rot" << nb_rotors-1 << ") -> ";
 
       }
       /*if no rotors, reflector leads straight to plugboard*/
       else { pb.setLetterIndex(rf.scramble());
 
-	 cerr << pb.getLetterIndex() << "(rf) -> "; }
+	//cerr << pb.getLetterIndex() << "(rf) -> "; 
+      }
 
       /*plugboard inversely scrambles letterIndex*/
       pb.inverseScramble();
 
-       cerr << pb.getLetterIndex() << "(pb) -> ";
+      //cerr << pb.getLetterIndex() << "(pb) -> ";
 
       /*plugboard outputs letter corresponding to letterIndex*/
       outputLetter = pb.getLetterIndex() + 65;
 
-      cerr << "outputting " << outputLetter << endl;
+      //cerr << "outputting " << outputLetter << endl;
 
-       cout << outputLetter;
+      cout << outputLetter;
     }
 
-  cerr << "finished encryption" << endl;
+  //cerr << "finished encryption" << endl;
 
   if (errorCode!=0) 
     return false;                                   //loop above ended because of invalid input
@@ -234,15 +212,16 @@ bool Enigma::encrypt() {
 }
 
 Enigma::~Enigma() {
-  if (nb_rotors>0) {
+  if (rotor) {
     for (int i=nb_rotors-1; i>=0; i--) {
       delete [] rotor[i];
       rotor[i] = NULL;
+      cerr << "deleted rotor" << endl;
     }
     delete [] rotor;
     rotor = NULL;
-    cerr << "deleted Rotor pointer" << endl;
   }
+  else cerr << "rotor deletion not executed" << endl;
 }
 /*END OF ENIGMA DEFINITIONS*/
 
@@ -257,11 +236,11 @@ PieceOfHardware::PieceOfHardware(Enigma* _machine) {
     configArray[i] = 0;
 }
 
-void PieceOfHardware::showConfig() const {
-  for (int i=0; configArray[i]!=sintinel; i++)
-    cerr << configArray[i] << ", ";
-  cerr << endl;
-}
+// void PieceOfHardware::showConfig() const {
+//   for (int i=0; configArray[i]!=sintinel; i++)
+//     cerr << configArray[i] << ", ";
+//     cerr << endl;
+// }
 
 bool PieceOfHardware::build(const char* configFilename, int type)
 {
@@ -282,12 +261,10 @@ bool PieceOfHardware::build(const char* configFilename, int type)
 
     /*check no two identical entries in configArray*/
     for (int j=i-1; j>=0; j--) {
-      if (configArray[i]==configArray[j] && type==plugboard) {
-	machine->errorDescription(5);
-	return 5;
-      }
-      if (configArray[i]==configArray[j] && type==reflector) {
-	machine->errorDescription(9);
+      if (configArray[i]==configArray[j]) {
+	if (type==plugboard)
+	  machine->errorDescription(5);
+	else machine->errorDescription(9);
 	return false;
       }
     }
@@ -337,7 +314,7 @@ bool Plugboard::getLetterFromInputFile() {
        !cin.eof(); 
        cin >> ws, cin >> input) {
 
-    cerr << input << " -> ";
+    //cerr << input << " -> ";
 
     /*check that input is a capital letter, new line, carriage return, tab or space*/
     ascii = (int) input;
@@ -488,7 +465,7 @@ bool Rotor::build(const char* configFilename, const char* posFilename, int rotor
   }
   rotPos = *begin2;
 
-  cerr << "one rotor built successfully" << endl;
+  //cerr << "one rotor built successfully" << endl;
   return true;
 }
 
@@ -500,7 +477,7 @@ bool Rotor::rotate() {
   rotPos = (rotPos + 1) % 26;
   for (int i=0; notches[i] != sintinel; i++) {
     if (rotPos == notches[i]) {
-      cerr << "notch met!" << " -> ";
+      //cerr << "notch met!" << " -> ";
       return true;                         //if leftmost rotor does rotate, 'true' will be returned but
     }                                      //'i>0' condition in 'for' loop in main will fail anyway.
   }    
