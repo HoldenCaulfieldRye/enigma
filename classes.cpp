@@ -2,8 +2,6 @@
 #include<cstdlib>
 #include<fstream>
 #include<cstring>
-#include<iterator>
-#include<sstream>
 #include<string>
 #include<cassert>
 
@@ -16,8 +14,10 @@ using namespace std;
 #include"enigma.h"
 
 
-/*ENIGMA DEFINITIONS*/
+/* NO ERROR CODES, PHRASES ONLY!!!*/
 
+
+/*ENIGMA DEFINITIONS*/
 /*minimalist constructor, declares machine components*/
 Enigma::Enigma() : pb(this), rf(this) {
   rotor = NULL;
@@ -26,21 +26,23 @@ Enigma::Enigma() : pb(this), rf(this) {
 }
 
 /*function for errors*/
-void Enigma::errorDescription(int code) {
+void Enigma::errorDescription(int code, const char* fileName) {
+  if (code!=0)
+    cerr << "in " << fileName << ": ";
   switch(code) {
   case 0: return;
-  case 3:
-    cerr << "invalid index (a number in configuration file is not between 0 and 25)" << endl;
-    errorCode = 3;  return;
-  case 4:
-    cerr << "non numeric character" << endl; 
-    errorCode = 4;  return;
   case 1:
     cerr << "insufficient number of parameters (given in command line)" << endl; 
     errorCode = 1;  return;
   case 2:
     cerr << "invalid input character (a non capital letter was input)" << endl; 
     errorCode = 2;  return;
+  case 3:
+    cerr << "invalid index (a number in configuration file is not between 0 and 25)" << endl;
+    errorCode = 3;  return;
+  case 4:
+    cerr << "non numeric character" << endl; 
+    errorCode = 4;  return;
   case 5:
     cerr << "impossible plugboard configuration (file attempts to connect a contact with itself or with multiple contacts)" << endl; 
     errorCode = 5;  return;
@@ -77,50 +79,48 @@ bool Enigma::build(int argc, char** argv) {
 
   /*check sufficient number of parameters*/
   if (argc<3) {
-    errorDescription(1);        return false;
+    errorDescription(INSUFFICIENT_NUMBER_OF_PARAMETERS, "command line");
+    return false;
   }
 
-  for (int i=1; i<argc && i<10; i++) {
-    int fileStatus;
-    struct stat fileInfo;
-    char ch;
-    ifstream file;
+  /*set number of rotors*/
+  nb_rotors = argc - 4;
+
+  // for (int i=1; i<argc && i<10; i++) {
+  //   int fileStatus;
+  //   struct stat fileInfo;
+  //   char ch;
+  //   ifstream file;
 
      /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
-#ifndef _WIN32
-    fileStatus = stat(argv[i], &fileInfo);
-    if (fileStatus!=0) {
-      cerr << "'"<< argv[i] << "' is a nonexistent pathname" << endl;
-      errorDescription(11);     return false;
-    }
-    else {
-      if (!S_ISREG(fileInfo.st_mode)) {
-	cerr << "'" << argv[i] << "' does not point to a regular file" << endl;
-	errorDescription(11);   return false;
-      }
-    }
-#endif
+// #ifndef _WIN32
+//     fileStatus = stat(argv[i], &fileInfo);
+//     if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
+//       errorDescription(ERROR_OPENING_CONFIGURATION_FILE, argv[i]);     
+//       return false;
+//     }
+// #endif
 
-    /*still need to check that the file can be opened.*/
-    file.open(argv[i]);
-    if (file.fail()) {
-      errorDescription(11);     return false;
-    }
+//     /*still need to check that the file can be opened.*/
+//     file.open(argv[i]);
+//     if (file.fail()) {
+//       errorDescription(ERROR_OPENING_CONFIGURATION_FILE, argv[i]);
+//       return false;
+//     }
 
-    /*check that all characters are numeric, new line, carriage return, tab or space*/
-    for (file >> ch; !file.eof(); file >> ch) {
-      if ((int) ch < 48 || (int) ch > 57) {
-	if (ch != 9 && ch != 10 && ch != 13 && ch != 32) {
-	  cerr << "in file " << i << ": ";
-	  errorDescription(4);  return false;
-	}
-      }
-    }
-    file.close();
-  }
+  //   /*check that all characters are numeric, new line, carriage return, tab or space*/
+  //   for (file >> ch; !file.eof(); file >> ch) {
+  //     if ((int) ch < 48 || (int) ch > 57) {
+  // 	if (ch != 9 && ch != 10 && ch != 13 && ch != 32) {
+  // 	  cerr << "in file " << i << ": ";
+  // 	  errorDescription(4);  return false;
+  // 	}
+  //     }
+  //   }
+  //   file.close();
+  // }
 
-  /*reach here iif there are no errors. configuration can begin*/
-  nb_rotors = argc - 4;
+  /*reach here iif config files can be opened*/
   if ( !pb.build(argv[1]) )     return false;
   if ( !rf.build(argv[2]) )     return false;
   if (nb_rotors>0) {
@@ -209,38 +209,64 @@ PieceOfHardware::PieceOfHardware(Enigma* _machine) {
 
 bool PieceOfHardware::build(const char* configFilename, int type)
 {
-  int num, i=0;
+  int fileStatus, num, i=0;
+  struct stat fileInfo;
   ifstream file;
-  file.open(configFilename);
+
+     /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
+#ifndef _WIN32
+    fileStatus = stat(configFilename, &fileInfo);
+    if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
+      machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, configFilename);     
+      return false;
+    }
+#endif
+
+    /*still need to check that the file can be opened.*/
+    file.open(configFilename);
+    if (file.fail()) {
+      machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, configFilename);
+      return false;
+    }
 
   /*set configArray*/
-  for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
-    num = *begin;
-
-    /*check that index is valid*/
-    if (num < 0 || num > 25) { 
-      machine->errorDescription(3);     return false;
+  /*check that all characters are numeric, new line, carriage return, tab or space*/
+  for (file >> num; !file.eof(); file >> num, i++) {
+    if (!num) {
+      machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename);    
+      return false;
     }
+
+    if (num < 0 || num > 25) { 
+      machine->errorDescription(INVALID_INDEX, configFilename);     
+      return false;
+    }
+
+    /*set configArray*/
     configArray[i] = num;
 
     /*check no two identical entries in configArray*/
     for (int j=i-1; j>=0; j--) {
       if (configArray[i]==configArray[j]) {
 	if (type==plugboard) {
-	  machine->errorDescription(5); return false;
+	  machine->errorDescription(IMPOSSIBLE_PLUGBOARD_CONFIGURATION, configFilename); 
+	  return false;
 	}
 	else {
-	  machine->errorDescription(9); return false;
+	  machine->errorDescription(INVALID_REFLECTOR_MAPPING, configFilename); 
+	  return false;
 	}
       }
     }
   }
 
   if (type==plugboard && i%2!=0) {            //check for an even number of plugboard parameters.
-    machine->errorDescription(6);       return false;
+    machine->errorDescription(INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS, configFilename);
+    return false;
   }
   if (type==reflector && i != 26) {           //check for 13 pairs of reflector parameter numbers.
-    machine->errorDescription(10);      return false;
+    machine->errorDescription(INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS, configFilename);
+    return false;
   }
 
   configArray[i] = sintinel;                  //reach here iif config perfectly valid.
