@@ -6,6 +6,7 @@
 #include<sstream>
 #include<string>
 #include<cassert>
+#include<sys/stat.h>
 
 using namespace std;
 
@@ -15,67 +16,116 @@ using namespace std;
 /*ENIGMA DEFINITIONS*/
 
 /*minimalist constructor, declares machine components*/
-Enigma::Enigma() {
+Enigma::Enigma() : pb(this), rf(this) {
+  rotor = NULL;
+  errorCode = 0;
   nb_rotors = 0;
 }
 
 /*function for errors*/
-void Enigma::error(int code) {
+void Enigma::errorDescription(int code) {
   switch(code) {
-  case -12:
-    cerr << "insufficient number of parameters (given in command line)" << endl;
-    exit(-12);
-  case -13:
-    cerr << "invalid input character (a non capital letter was input)" << endl;
-    exit(-13);
-  case -14:
-    cerr << "impossible plugboard configuration (file attempts to connect a contact with itself or with multiple contacts)" << endl;
-    exit(-14);
-  case -15:
+  case 0:
+    return;
+  case 3:
+    cerr << "invalid index (a number in configuration file is not between 0 and 25)" << endl;
+    errorCode = 3;  return;
+  case 4:
+    cerr << "non numeric character (in configuration file)" << endl; 
+    errorCode = 4;  return;
+  case 1:
+    cerr << "insufficient number of parameters (given in command line)" << endl; 
+    errorCode = 1;  return;
+  case 2:
+    cerr << "invalid input character (a non capital letter was input)" << endl; 
+    errorCode = 2;  return;
+  case 5:
+    cerr << "impossible plugboard configuration (file attempts to connect a contact with itself or with multiple contacts)" << endl; 
+    errorCode = 5;  return;
+  case 6:
     cerr << "incorrect number of plugboard parameters (should be an even number of them)" << endl;
-    exit(-15);
-  case -16:
-    cerr << "invalid rotor mapping (an input is not mapped or an input has multiple mappings" << endl;
-    exit(-16);
-  case -17:
+    errorCode = 6;  return;
+  case 7:
+    cerr << "invalid rotor mapping (an input is not mapped or an input has multiple mappings" << endl; 
+    errorCode = 7;  return;
+  case 8:
     cerr << "no rotor starting position (insufficient number of starting positions)" << endl;
-    exit(-17);
-  case -18:
-    cerr << "invalid reflector mapping (file attempts to connect a contact with itself or with multiple contacts)" << endl;
-    exit(-18);
-  case -19:
+    errorCode = 8;  return;
+  case 9:
+    cerr << "invalid reflector mapping (file attempts to connect a contact with itself or with multiple contacts)" << endl; 
+    errorCode = 9;  return;
+  case 10:
     cerr << "incorrect number of reflector parameters (file does not contain exactly 13 pairs of numbers)" << endl;
-    exit(-19);
+    errorCode = 10; return;
+  case 11:
+    cerr << "error opening configuration file" << endl; 
+    errorCode = 11; return;
   default:
-    cerr << "Unknown error" << endl;
-    exit(-1);
+    cerr << "Unknown error" << endl; 
+    errorCode = -1; return;
   }
 }
 
-/* checks for errors in configuration files and configures machine components*/
-void Enigma::build(int argc, char** argv) {
+int Enigma::getErrorCode() const {
+  return errorCode;
+}
+
+/*checks for some errors in configuration files and configures machine components.
+  configuration files are read through char-by-char to first make sure that only numeric
+  and space/tab/NL characters are present. files will then be read int-by-int by component
+  specific build methods to check for all other errors.*/
+bool Enigma::build(int argc, char** argv) {
+
+  cerr << "beginning of build enigma" << endl;
 
   /*check sufficient number of parameters*/
   if (argc<3) {
-    error(-12);
+    errorDescription(1);
+    return false;
   }
 
-  /*check that all characters are numeric, new line, carriage return, tab or space*/
   for (int i=1; i<argc && i<10; i++) {
+    int fileStatus;
+    struct stat fileInfo;
     char ch;
     ifstream file;
-    file.open(argv[i]);
 
+    cerr << "looking in a file" << endl;
+
+    /*if on an OS that supports POSIX, use 'stat' system call to check that arg is a regular file. on linux,
+      if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' 
+      endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
+#ifndef _WIN32
+    fileStatus = stat(argv[i], &fileInfo);
+    if (fileStatus!=0) {
+      cerr << "'"<< argv[i] << "' is a nonexistent pathname" << endl;
+      errorDescription(11);
+      return false;
+    }
+    else {
+      if (!S_ISREG(fileInfo.st_mode)) {
+	cerr << "'" << argv[i] << "' does not point to a regular file" << endl;
+	errorDescription(11);
+	return false;
+      }
+    }
+#endif
+
+    /*if on windows, haven't yet checked that a file exists. Regardless of the OS, still need to check that
+      the file can be opened.*/
+    file.open(argv[i]);
     if (file.fail()) {
-      cerr << "could not open " << argv[i] << " (perhaps filename is misspecified?)" << endl;
-      error(-1);
+      errorDescription(11);
+      return false;
     }
 
-    for (file.get(ch); !file.eof(); file.get(ch)) {
+    /*check that all characters are numeric, new line, carriage return, tab or space*/
+    for (file >> ch; !file.eof(); file >> ch) {
       if ((int) ch < 48 || (int) ch > 57) {
 	if (ch != 9 && ch != 10 && ch != 13 && ch != 32) {
 	  cerr << "in file " << i << ": ";
-	  error(-11);
+	  errorDescription(4);
+	  return false;
 	}
       }
     }
@@ -86,19 +136,24 @@ void Enigma::build(int argc, char** argv) {
   cerr << "initialising" << endl;
 
   nb_rotors = argc - 4;
-  pb.build(argv[1]);
-  rf.build(argv[2]);
+  if(!pb.build(argv[1]) || !rf.build(argv[2]))
+    return false;
   if (nb_rotors>0) {
-    Rotor *rotor;
-    rotor = new Rotor [nb_rotors];
+    rotor = new Rotor *[nb_rotors];
     for (int i=0; i<nb_rotors; i++) {
-      rotor[i].build(argv[i+3], argv[argc-1], i);  //starting positions are set.
-    rotor[i].showConfig();
+      rotor[i] = new Rotor(this);
+      if(!rotor[i]->build(argv[i+3], argv[argc-1], i))  //starting positions are set.
+	return false;
+      rotor[i]->showConfig();    //DELETE AFTERWARDS
     }  
   }
+
+  cerr << "initialisation successful" << endl;
+
+  return true;
 }
 
-void Enigma::encrypt() {
+bool Enigma::encrypt() {
   cerr << "beginning encryption" << endl;
 
   char outputLetter;
@@ -106,41 +161,36 @@ void Enigma::encrypt() {
   /*encryption: while input file has valid letters to give, the process loops*/
   int x = 0;
 
-
-  while (pb.getLetterFromInputFile()) 
+  while (pb.getLetterFromInputFile()) //loops ends if error input invalid or eof
     {
-
       cerr << x << ", "; x++;
       cerr << nb_rotors << endl;
 
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
-	for (int i=nb_rotors-1; 
-             i>=0 && rotor[i]->rotate(); 
-             i--);
+	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--);
 
 	cerr << x << ", "; x++;
 
 	/*plugboard sends letterIndex to rightmost rotor*/
 	rotor[nb_rotors-1]->setLetterIndex(pb.scramble());
 
-      cerr << x << ", "; x++;
+	cerr << x << ", "; x++;
 
 	/*each rotor with a left neighbour scrambles letterIndex & sends it to neighbour*/
 	for (int i=nb_rotors-1; i>0; i--) {
 
-      cerr << x << ", "; x++;
+	  cerr << x << ", "; x++;
 
-          // rotor[i]->scramble();
-          rotor[i-1]->setLetterIndex(rotor[i]->scramble());
+	  rotor[i-1]->setLetterIndex(rotor[i]->scramble());
 	}    
 
-      cerr << x << ", "; x++;
+	cerr << x << ", "; x++;
 
 	/*leftmost rotor sends letterIndex to reflector*/
 	rf.setLetterIndex(rotor[0]->scramble());
 
-      cerr << x << ", "; x++;
+	cerr << x << ", "; x++;
       }
       /*if no rotors, plugboard leads straight to reflector*/
       else rf.setLetterIndex(pb.scramble());
@@ -151,18 +201,18 @@ void Enigma::encrypt() {
 	/*reflector sends letterIndex to leftmost rotor*/
 	rotor[0]->setLetterIndex(rf.scramble());
 
-      cerr << x << ", "; x++;
+	cerr << x << ", "; x++;
 
 	/*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
 	for (int i=0; i<nb_rotors-1; i++) {
 
-          rotor[i+1]->setLetterIndex(rotor[i]->inverseScramble());
+	  rotor[i+1]->setLetterIndex(rotor[i]->inverseScramble());
 	} 
 
 	/*rightmost rotor sends letterIndex to plugboard*/
 	pb.setLetterIndex(rotor[nb_rotors-1]->inverseScramble());
 
-      cerr << x << ", "; x++;
+	cerr << x << ", "; x++;
 
       }
       /*if no rotors, reflector leads straight to plugboard*/
@@ -185,6 +235,10 @@ void Enigma::encrypt() {
     }
 
   cerr << "finished encryption" << endl;
+
+  if (errorCode!=0) 
+    return false;                                   //loop above ended because of invalid input
+  else return true;                                 //loop above ended because of eof
 }
 
 Enigma::~Enigma() {
@@ -199,20 +253,23 @@ Enigma::~Enigma() {
 
 
 /*PIECEOFHARDWARE DEFINITIONS*/
-PieceOfHardware::PieceOfHardware() {
-  letterIndex = 0;               //holds index value of letter to encrypt.
+PieceOfHardware::PieceOfHardware() {}
+
+PieceOfHardware::PieceOfHardware(Enigma* _machine) {
+  machine = _machine;
+  letterIndex = 0;                                  //holds index value of letter to encrypt.
   for (int i=0; i<27; i++)
     configArray[i] = 0;
   configArraySize = 0;
 }
 
-void PieceOfHardware::showConfig() {
+void PieceOfHardware::showConfig() const {
   for (int i=0; configArray[i]!=sintinel; i++)
     cerr << configArray[i] << ", ";
   cerr << endl;
 }
 
-void PieceOfHardware::build(const char* configFilename, int type)
+bool PieceOfHardware::build(const char* configFilename, int type)
 {
   int num, i=0;
   ifstream file;
@@ -224,33 +281,37 @@ void PieceOfHardware::build(const char* configFilename, int type)
 
     /*check that index is valid*/
     if (num < 0 || num > 25) { 
-      Enigma::error(-10);
+      machine->errorDescription(3);
+      return false;
     }
     configArray[i] = num;
 
     /*check no two identical entries in configArray*/
     for (int j=i-1; j>=0; j--) {
-      if (configArray[i]==configArray[j]) {
-	if (type==plugboard)
-	  Enigma::error(-14);
-	if (type==reflector)
-	  Enigma::error(-18);
+      if (configArray[i]==configArray[j] && type==plugboard) {
+	machine->errorDescription(5);
+	return 5;
+      }
+      if (configArray[i]==configArray[j] && type==reflector) {
+	machine->errorDescription(9);
+	return false;
       }
     }
   }
 
-  if (type==plugboard) {         //check that we have an even number of plugboard parameters.
-    if (i % 2 != 00) 
-      Enigma::error(-15);
+  if (type==plugboard && i%2!=0) {                 //check for an even number of plugboard parameters.
+    machine->errorDescription(6);
+    return false;
   }
-  else if(type==reflector) {     //check that we have 13 pairs of reflector parameter numbers.
-    if (i != 26)
-      Enigma::error(-19);
+  if (type==reflector && i != 26) {                //check for 13 pairs of reflector parameter numbers.
+    machine->errorDescription(10);
+    return false;
   }
 
-  configArray[i] = sintinel;     //reach here iif config perfectly valid.
+  configArray[i] = sintinel;                       //reach here iif config perfectly valid.
   configArraySize = i;
   file.close();
+  return true;
 }
 
 int PieceOfHardware::getLetterIndex() const {
@@ -260,23 +321,24 @@ int PieceOfHardware::getLetterIndex() const {
 /* storing the index value of the letter rather than the letter itself is great because it 
    keeps this function very simple */
 void PieceOfHardware::setLetterIndex(int value) {
+  assert(value<26 && value>=0);
   letterIndex = value;
 }
 /*END OF PIECEOFHARDWARE DEFINITIONS*/
 
 
 /*PLUGBOARD DEFINITIONS*/
-Plugboard::Plugboard() : PieceOfHardware::PieceOfHardware() {
-}
+Plugboard::Plugboard() {}
 
-void Plugboard::build(const char* configFilename) {
-  PieceOfHardware::build(configFilename, plugboard);
+Plugboard::Plugboard(Enigma *_machine) : PieceOfHardware::PieceOfHardware(_machine) {}
+
+bool Plugboard::build(const char* configFilename) {
+  return PieceOfHardware::build(configFilename, plugboard);
 }
 
 /*sets letter: reads in one character from inFile, performs checks, ignores if space etc
   if valid, assigns index value to letter and returns true; if fail (inc eof) returns false*/
-bool Plugboard::getLetterFromInputFile()
-{
+bool Plugboard::getLetterFromInputFile() {
   int ascii;
   char input;
 
@@ -287,9 +349,10 @@ bool Plugboard::getLetterFromInputFile()
     /*check that input is a capital letter, new line, carriage return, tab or space*/
     ascii = (int) input;
     if (ascii>91 || ascii<64) {
-      if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32)
-	Enigma::error(-13);
-                                        //else letter is new line, carriage return, tab or space
+      if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
+	machine->errorDescription(2);
+	return false;
+      }                                 //else letter is new line, carriage return, tab or space
     }                                   //so do nothing.       
     else {
       letterIndex = ascii - 65;
@@ -299,7 +362,7 @@ bool Plugboard::getLetterFromInputFile()
   return false;                         //reach here iif end of file has been reached.
 }
 
-int Plugboard::scramble(int number) {
+int Plugboard::scramble(int number) const {
   assert(number>=0 && number<26);
   for (int i=0; i<configArraySize; i++) {
     if (configArray[i]==number) {
@@ -317,24 +380,23 @@ int Plugboard::scramble() {
 }
 
 int Plugboard::inverseScramble() {      //for any valid config file, scramble() is a
-                                        //bijection on {0,.., 25}.
-  for (int i=0; i<26; i++) {            //so inverse function of scramble() exists; this is it.
-    if (scramble(i) == letterIndex) {
+  for (int i=0; i<26; i++) {            //bijection on {0,.., 25}.
+    if (scramble(i) == letterIndex) {   //so inverse function of scramble() exists; this is it.
       return i;
     }
   }
-  Enigma::error(-1);                    //should not ever reach here.
+  machine->errorDescription(-1);        //should not ever reach here.
   return -1;
 }
 /*END OF PLUGBOARD DEFINITIONS*/
 
 
 /*REFLECTOR DEFINITIONS*/
-Reflector::Reflector() : PieceOfHardware::PieceOfHardware() {
-}
+Reflector::Reflector() {}
+Reflector::Reflector(Enigma *_machine) : PieceOfHardware::PieceOfHardware(_machine) {}
 
-void Reflector::build(const char* configFilename) {
-  PieceOfHardware::build(configFilename, reflector);
+bool Reflector::build(const char* configFilename) {
+  return PieceOfHardware::build(configFilename, reflector);
 }
 
 int Reflector::scramble() {
@@ -346,20 +408,21 @@ int Reflector::scramble() {
       return configArray[i-1];          //i is odd, so letter(configArray[i]) and
     }                                   //letter(configArray[i-1]) are connected.
   }
-  Enigma::error(-1);                    //all letters should have a mapping, so should
+  machine->errorDescription(-1);         //all letters should have a mapping, so should
   return -1;                            //not ever reach here.
 }
 /*END OF REFLECTOR DEFINITIONS*/
 
 
 /*ROTOR DEFINITIONS*/
-Rotor::Rotor() : PieceOfHardware() {
+Rotor::Rotor() {}
+Rotor::Rotor(Enigma *_machine) : PieceOfHardware(_machine) {
   for (int i=0; i<50; i++)  
     notches[i] = 0;
   rotPos = 0;
 }
 
-void Rotor::build(const char* configFilename, const char* posFilename, int rotor_nb)
+bool Rotor::build(const char* configFilename, const char* posFilename, int rotor_nb)
 {
   int num, i=0, k=0;
   ifstream file;
@@ -371,30 +434,38 @@ void Rotor::build(const char* configFilename, const char* posFilename, int rotor
     num = *begin;
 
     /*check that index is valid*/
-    if (num < 0 || num > 25)
-      Enigma::error(-10);
+    if (num < 0 || num > 25) {
+      machine->errorDescription(3);
+      return false;
+    }
 
     configArray[i] = num;
 
     /*check no two identical entries in configArray*/
     for (int j=i-1; j>=0; j--) {
-      if (configArray[i]==configArray[j])
-	Enigma::error(-16);
+      if (configArray[i]==configArray[j]) {
+	machine->errorDescription(7);
+	return false;
+      }
     }
   }
 
   /*check that we have every input mapped*/
   /*reach here iif no identical configArray entries, so merely need to check size)*/
-  if (i != 26)
-    Enigma::error(-16);
+  if (i != 26) {
+    machine->errorDescription(7);
+    return false;
+  }
 
   /*set notches, starting from where we left off*/
   for (; begin!=end; ++begin, k++) {
     num = *begin;
 
     /*check that index is valid*/
-    if (num < 0 || num > 25)
-      Enigma::error(-10);
+    if (num < 0 || num > 25) {
+      machine->errorDescription(3);
+      return false;
+    }
 
     notches[k] = num;
   }
@@ -412,13 +483,20 @@ void Rotor::build(const char* configFilename, const char* posFilename, int rotor
   for (count=0; count < rotor_nb && begin2!=end2; ++begin2, count++);
 
   /*check that there is a starting position for the rotor*/
-  if (begin2==end2)
-    Enigma::error(-17);
+  if (begin2==end2) {
+    machine->errorDescription(8);
+    return false;
+  }
 
   /*check that index is valid*/
-  if (*begin2 < 0 || *begin2 > 25)
-    Enigma::error(-10);
+  if (*begin2 < 0 || *begin2 > 25) {
+    machine->errorDescription(3);
+    return false;
+  }
   rotPos = *begin2;
+
+  cerr << "one rotor built successfully" << endl;
+  return true;
 }
 
 int Rotor::getRotPos() const {
@@ -430,13 +508,13 @@ bool Rotor::rotate() {
   for (int i=0; notches[i] != sintinel; i++) {
     if (rotPos == notches[i]) {
       cerr << "notch met!" << endl;
-      return true;               //if leftmost rotor does rotate, 'true' will be returned but
-    }                            //'i>0' condition in 'for' loop in main will fail anyway.
+      return true;                         //if leftmost rotor does rotate, 'true' will be returned but
+    }                                      //'i>0' condition in 'for' loop in main will fail anyway.
   }    
   return false;
 }
 
-int Rotor::scramble(int number)  {
+int Rotor::scramble(int number) const {
   assert(number>=0 && number<26);
   return (configArray[(number + rotPos) % 26] + 26 - rotPos) % 26;
 }
@@ -451,7 +529,7 @@ int Rotor::inverseScramble() {
       return i;
     }
   }
-  Enigma::error(-1);            //should not ever reach here.
+  machine->errorDescription(-1);           //should not ever reach here.
   return -1;
 }
 /*END OF ROTOR DEFINITIONS*/

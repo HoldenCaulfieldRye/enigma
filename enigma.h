@@ -2,41 +2,40 @@
   this is a good value because -1 could never appear as a 'proper' configuration value. */
 #define sintinel -1    
 
-/*generic error codes*/
-#define INVALID_INDEX -10 //not between 0 and 25
-#define NON_NUMERIC_CHARACTER -11
-
-/*input error codes*/
-#define INSUFFICIENT_NUMBER_OF_PARAMETERS -12
-#define INVALID_INPUT_CHARACTER -13
-
-/*plugboard error codes*/
-#define IMPOSSIBLE_PLUGBOARD_CONFIGURATION -14
-#define INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS -15
-
-/*rotor error codes*/
-#define INVALID_ROTOR_MAPPING -16
-#define NO_ROTOR_STARTING_POSITION -17
-
-/*reflector error codes*/
-#define INVALID_REFLECTOR_MAPPING -18
-#define INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS -19
+/* error codes  */
+#define INSUFFICIENT_NUMBER_OF_PARAMETERS		1
+#define INVALID_INPUT_CHARACTER				2
+#define INVALID_INDEX					3
+#define NON_NUMERIC_CHARACTER				4
+#define IMPOSSIBLE_PLUGBOARD_CONFIGURATION		5
+#define INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS	6
+#define INVALID_ROTOR_MAPPING				7
+#define NO_ROTOR_STARTING_POSITION			8
+#define INVALID_REFLECTOR_MAPPING			9
+#define INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS	10
+#define ERROR_OPENING_CONFIGURATION_FILE		11
+#define UNKNOWN_ERROR                                   -1
+#define NO_ERROR					0
 
 /*used in base class constructor*/      
 #define plugboard 0
 #define reflector 1
 
 /*this base class is for machine component subclasses to inherit common fields and methods*/
+class Enigma;
+
 class PieceOfHardware {
  protected:
+  Enigma* machine;
   int letterIndex;           //holds index value of letter to encrypt
   int configArray[27];
   int configArraySize;
 
  public:
   PieceOfHardware();
-  void build(const char* configurationFilename, int hardwareType); //performs most error checks
-  void showConfig(); //DELETE AFTERWARDS
+  PieceOfHardware(Enigma* _machine);
+  bool build(const char* configurationFilename, int hardwareType); //performs most error checks
+  void showConfig() const; //DELETE AFTERWARDS
   int getLetterIndex() const;
   void setLetterIndex(int newLetterIndex);
 };
@@ -44,19 +43,21 @@ class PieceOfHardware {
 
 class Plugboard : public PieceOfHardware {
  public:
-  Plugboard();
-  void build(const char* configurationFilename);
+  Plugboard(); //TRY DELETING
+  Plugboard(Enigma *_machine);
+  bool build(const char* configurationFilename);
   bool getLetterFromInputFile();
   int scramble();
-  int scramble(int letterIndexToScramble);
+  int scramble(int letterIndexToScramble) const;
   int inverseScramble();
 };
 
 
 class Reflector : public PieceOfHardware {
  public:
-  Reflector();
-  void build(const char* configurationFilename);
+  Reflector(); //TRY DELETING
+  Reflector(Enigma *_machine);
+  bool build(const char* configurationFilename);
   int scramble();
 };
 
@@ -67,12 +68,13 @@ private:
    int rotPos;
 
  public: 
-   Rotor();
-   void build(const char* configurationFileName, const char* rotorPositionFilename, int rotorNumber);
+   Rotor(); //TRY DELETING
+   Rotor(Enigma *_machine);
+   bool build(const char* configFileName, const char* rotPosFilename, int rotNumber);
    int getRotPos() const;
    bool rotate();
    int scramble();
-   int scramble(int letterIndexToScramble);
+   int scramble(int letterIndexToScramble) const;
    int inverseScramble();
 };
 
@@ -81,14 +83,17 @@ indicates that there is a specific, "private" machine mechanism*/
 class Enigma {
  private:
   int nb_rotors;
+  int errorCode;
   Plugboard pb;
   Reflector rf;
   Rotor **rotor;
 
  public:
   Enigma();
-  static void error(int errorCode);   //function for outputting error descriptions and exiting
-  void build(int argc, char** argv);
-  void encrypt();
+  void errorDescription(int code);//also sets errorCode
+  int getErrorCode() const;
+  bool build(int argc, char** argv);
+  bool encrypt();
   ~Enigma();
 };
+
