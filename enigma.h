@@ -34,7 +34,6 @@ class PieceOfHardware {
   PieceOfHardware();
   PieceOfHardware(Enigma* _machine);
   bool build(const char* configurationFilename, int hardwareType); //performs most error checks
-  //void showConfig() const; //DELETE AFTERWARDS
   int getLetterIndex() const; //DELETE AFTERWARDS, NEED ONLY BE IN PLUGBOARD
   void setLetterIndex(int newLetterIndex);
 };
