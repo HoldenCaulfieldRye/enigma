@@ -19,7 +19,6 @@
 /*used in base class constructor*/      
 #define plugboard 0
 #define reflector 1
-#define rotor     3
 
 /*this class is only instanciated once in the program, but it is still relevant, because it indicates that there is a specific, "private" machine mechanism*/
 class Enigma;
