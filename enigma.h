@@ -20,9 +20,10 @@
 #define plugboard 0
 #define reflector 1
 
-/*this base class is for machine component subclasses to inherit common fields and methods*/
+/*this class is only instanciated once in the program, but it is still relevant, because it indicates that there is a specific, "private" machine mechanism*/
 class Enigma;
 
+/*this base class is for machine component subclasses to inherit common fields and methods*/
 class PieceOfHardware {
  protected:
   Enigma* machine;
@@ -76,8 +77,7 @@ private:
    int inverseScramble();
 };
 
-/*this class is only instanciated once in the program, but it is still relevant, because it 
-indicates that there is a specific, "private" machine mechanism*/
+
 class Enigma {
  private:
   int nb_rotors;

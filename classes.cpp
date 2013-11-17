@@ -89,7 +89,7 @@ bool Enigma::build(int argc, char** argv) {
 
     cerr << "looking in a file" << endl;
 
-    /*if on an OS that supports POSIX, use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
+    /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
 #ifndef _WIN32
     fileStatus = stat(argv[i], &fileInfo);
     if (fileStatus!=0) {
@@ -106,7 +106,7 @@ bool Enigma::build(int argc, char** argv) {
     }
 #endif
 
-    /*if on windows, haven't yet checked that a file exists. Regardless of the OS, still need to check that the file can be opened.*/
+    /*still need to check that the file can be opened.*/
     file.open(argv[i]);
     if (file.fail()) {
       errorDescription(11);
@@ -234,12 +234,15 @@ bool Enigma::encrypt() {
 }
 
 Enigma::~Enigma() {
-  for (int i=nb_rotors-1; i>=0; i--) {
+  if (nb_rotors>0) {
+    for (int i=nb_rotors-1; i>=0; i--) {
+      delete [] rotor[i];
+      rotor[i] = NULL;
+    }
     delete [] rotor;
     rotor = NULL;
-  }
-  if (nb_rotors>0)
     cerr << "deleted Rotor pointer" << endl;
+  }
 }
 /*END OF ENIGMA DEFINITIONS*/
 
