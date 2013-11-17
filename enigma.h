@@ -17,8 +17,9 @@
 #define NO_ERROR					0
 
 /*used in base class constructor*/      
-#define plugboard 0
-#define reflector 1
+#define plu 20
+#define ref 21
+#define rot 23
 
 /*this class is only instanciated once in the program, but it is still relevant, because it indicates that there is a specific, "private" machine mechanism*/
 class Enigma;
@@ -61,19 +62,20 @@ class Reflector : public PieceOfHardware {
 
 
 class Rotor : public PieceOfHardware {
-private:
-   int notches[50];
-   int rotPos;
+ private:
+  int notches[50];
+  int rotPos;
 
  public: 
-   Rotor(); //TRY DELETING
-   Rotor(Enigma *_machine);
-   bool build(const char* configFileName, const char* rotPosFilename, int rotNumber);
-   int getRotPos() const;
-   bool rotate();
-   int scramble();
-   int scramble(int letterIndexToScramble) const;
-   int inverseScramble();
+  Rotor(); //TRY DELETING
+  Rotor(Enigma *_machine);
+  bool build(const char* configFileName, const char* rotPosFilename, int rotNumber);
+  bool setNotches(const char* configFilename);
+  bool setRotpos(const char* posFilename, int rotNumber);
+  bool rotate();
+  int scramble();
+  int scramble(int letterIndexToScramble) const;
+  int inverseScramble();
 };
 
 
@@ -83,7 +85,7 @@ class Enigma {
   int errorCode;
   Plugboard pb;
   Reflector rf;
-  Rotor **rotor;
+  Rotor** rotor;
 
  public:
   Enigma();
