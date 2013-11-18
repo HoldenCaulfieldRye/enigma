@@ -297,7 +297,6 @@ bool Plugboard::getLetterFromInputFile() {
       }                                 //else letter is new line, carriage return, tab or space
     }                                   //so do nothing.       
     else {
-      cerr << input << " -> ";
       letterIndex = ascii - 65;
       return true;
     }
@@ -451,21 +450,10 @@ bool Rotor::setNotches(const char* configFilename) {
       machine->errorDescription(INVALID_INDEX, configFilename);     
       return false;
     }
-
-    cerr << "adding notch "<< notches[i] <<endl;
   }
 
   notches[i] = sintinel;
   return true;
-}
-
-void Rotor::showRotpos() const {  //DELETE
-  cerr << rotPos;
-}
-
-void Rotor::showNotches() const {
-  for (int i=0; notches[i]!=sintinel; i++)
-    cerr << notches[i] << ", ";
 }
 
 bool Rotor::setRotpos(const char* posFilename, int rotNumber) {
@@ -503,11 +491,9 @@ bool Rotor::setRotpos(const char* posFilename, int rotNumber) {
 bool Rotor::rotate() {
   rotPos = (rotPos + 1) % 26;
   for (int i=0; notches[i] != sintinel; i++) {
-    if (rotPos == notches[i]) {
-      cerr << "notch met!"; 
+    if (rotPos == notches[i])
        return true;                       //if leftmost rotor does rotate, 'true' will be returned but
-    }                                     //'i>0' condition in 'for' loop in main will fail anyway.
-  }    
+  }                                       //'i>0' condition in 'for' loop in main will fail anyway.
   return false;
 }
 
