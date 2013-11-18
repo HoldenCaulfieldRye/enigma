@@ -141,7 +141,7 @@ bool Enigma::encrypt() {
   /*encryption: while input file has valid letters to give, the process loops*/
   while (pb.getLetterFromInputFile())                  //loop ends if error input invalid or eof.
     {
-
+      cerr << pb.getLetterIndex() << "(input)";
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
 	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--);
@@ -313,6 +313,8 @@ bool PieceOfHardware::build(const char* configFilename, int type)
   /*if not rotor, reach here iif configuration perfectly valid. if rotor, setRotPos() has yet to act, see Rotor::build() for implementation*/
   configArray[i] = sintinel;                  
   file.close();
+
+  showConfigArray();   //DELETE
   return true;
 }
 
@@ -343,6 +345,12 @@ void PieceOfHardware::setLetterIndex(int const &value) {
   assert(value<26 && value>=0);
   letterIndex = value;
 }
+
+void PieceOfHardware::showConfigArray() { //DELETE
+  for (int i=0; configArray[i]!=sintinel; i++)
+    cerr << configArray[i] << ", ";
+  cerr << endl;
+}
 /*END OF PIECEOFHARDWARE DEFINITIONS*/
 
 
@@ -371,7 +379,7 @@ bool Plugboard::getLetterFromInputFile() {
       }                                 //else letter is new line, carriage return, tab or space
     }                                   //so do nothing.       
     else {
-      cerr << input << "(input) -> ";
+      cerr << input << " -> ";
       letterIndex = ascii - 65;
       return true;
     }
