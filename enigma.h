@@ -16,33 +16,29 @@
 #define UNKNOWN_ERROR                                   -1
 #define NO_ERROR					0
 
-/*used in base class constructor*/      
-#define plu 20
-#define ref 21
-#define rot 23
-
 /*this class is only instanciated once in the program, but it is still relevant, because it indicates that there is a specific, "private" machine mechanism*/
 class Enigma;
 
-/*this base class is for machine component subclasses to inherit common fields and methods*/
+/*this pure virtual base class is for machine component subclasses to inherit common fields and methods*/
 class PieceOfHardware {
  protected:
   Enigma* machine;
   int letterIndex;           //holds index value of letter to encrypt
   int configArray[27];
-
  public:
   PieceOfHardware();
   PieceOfHardware(Enigma* _machine);
-   bool build(const char* configurationFilename, int hardwareType); //performs most error checks
-  bool fileIsOpenable(ifstream &file, const char* fileName); //if openable, opens file
+  virtual bool build(const char*) = 0;
+  int setArray(ifstream &file, const char* fileName, int *array, int &offset); //performs most error checks
+  bool validFilename(ifstream &file, const char* fileName); //if openable, opens file
+  bool validEntry(ifstream &file, const char* fileName, int &num); //num is a valid entry to set to a cofniguration array
+  bool setArrayEntry(int *array, int &offset, int const &num);
   void setLetterIndex(int const &newLetterIndex);
 };
 
-
 class Plugboard : public PieceOfHardware {
  public:
-  Plugboard(); //TRY DELETING
+  Plugboard();
   Plugboard(Enigma *_machine);
   bool build(const char* configurationFilename);
   bool getLetterFromInputFile();
@@ -52,24 +48,22 @@ class Plugboard : public PieceOfHardware {
   int getLetterIndex() const;
 };
 
-
 class Reflector : public PieceOfHardware {
  public:
-  Reflector(); //TRY DELETING
+  Reflector();
   Reflector(Enigma *_machine);
   bool build(const char* configurationFilename);
   int scramble();
 };
 
-
 class Rotor : public PieceOfHardware {
  private:
   int notches[50];
   int rotPos;
-
  public: 
-  Rotor(); //TRY DELETING
+  Rotor();
   Rotor(Enigma *_machine);
+  bool build(const char* configFileName); //need this to prevent class from being pure virtual
   bool build(const char* configFileName, const char* rotPosFilename, int rotNumber);
   bool setNotches(const char* configFilename);
   bool setRotpos(const char* posFilename, int rotNumber);
@@ -79,7 +73,6 @@ class Rotor : public PieceOfHardware {
   int inverseScramble();
 };
 
-
 class Enigma {
  private:
   int nb_rotors;
@@ -87,15 +80,12 @@ class Enigma {
   Plugboard pb;
   Reflector rf;
   Rotor** rotor;
-
  public:
   Enigma();
   void errorDescription(int code); //describes error, sets error code
   /*overload: also specifies filename in which error occurred and closes ifstream*/
   void errorDescription(int code, const char* fileName, ifstream &file);
-  int getErrorCode() const;
   bool build(int argc, char** argv);
   bool encrypt();
   ~Enigma();
 };
-
