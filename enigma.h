@@ -17,8 +17,9 @@
 #define NO_ERROR					0
 
 /*used in base class constructor*/      
-#define plugboard 0
-#define reflector 1
+#define plu 20
+#define ref 21
+#define rot 23
 
 /*this class is only instanciated once in the program, but it is still relevant, because it indicates that there is a specific, "private" machine mechanism*/
 class Enigma;
@@ -33,8 +34,9 @@ class PieceOfHardware {
  public:
   PieceOfHardware();
   PieceOfHardware(Enigma* _machine);
-  bool build(const char* configurationFilename, int hardwareType); //performs most error checks
-  void setLetterIndex(int newLetterIndex);
+   bool build(const char* configurationFilename, int hardwareType); //performs most error checks
+  bool fileIsOpenable(ifstream &file, const char* fileName); //if openable, opens file
+  void setLetterIndex(int const &newLetterIndex);
 };
 
 
@@ -61,19 +63,20 @@ class Reflector : public PieceOfHardware {
 
 
 class Rotor : public PieceOfHardware {
-private:
-   int notches[50];
-   int rotPos;
+ private:
+  int notches[50];
+  int rotPos;
 
  public: 
-   Rotor(); //TRY DELETING
-   Rotor(Enigma *_machine);
-   bool build(const char* configFileName, const char* rotPosFilename, int rotNumber);
-   int getRotPos() const;
-   bool rotate();
-   int scramble();
-   int scramble(int letterIndexToScramble) const;
-   int inverseScramble();
+  Rotor(); //TRY DELETING
+  Rotor(Enigma *_machine);
+  bool build(const char* configFileName, const char* rotPosFilename, int rotNumber);
+  bool setNotches(const char* configFilename);
+  bool setRotpos(const char* posFilename, int rotNumber);
+  bool rotate();
+  int scramble();
+  int scramble(int letterIndexToScramble) const;
+  int inverseScramble();
 };
 
 
@@ -83,11 +86,13 @@ class Enigma {
   int errorCode;
   Plugboard pb;
   Reflector rf;
-  Rotor **rotor;
+  Rotor** rotor;
 
  public:
   Enigma();
-  void errorDescription(int code);//also sets errorCode
+  void errorDescription(int code); //describes error, sets error code
+  /*overload: also specifies filename in which error occurred and closes ifstream*/
+  void errorDescription(int code, const char* fileName, ifstream &file);
   int getErrorCode() const;
   bool build(int argc, char** argv);
   bool encrypt();

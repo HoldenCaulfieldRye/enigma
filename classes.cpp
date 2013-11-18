@@ -2,8 +2,6 @@
 #include<cstdlib>
 #include<fstream>
 #include<cstring>
-#include<iterator>
-#include<sstream>
 #include<string>
 #include<cassert>
 
@@ -17,7 +15,6 @@ using namespace std;
 
 
 /*ENIGMA DEFINITIONS*/
-
 /*minimalist constructor, declares machine components*/
 Enigma::Enigma() : pb(this), rf(this) {
   rotor = NULL;
@@ -27,6 +24,25 @@ Enigma::Enigma() : pb(this), rf(this) {
 
 /*function for errors*/
 void Enigma::errorDescription(int code) {
+  switch (code) {
+    case 1:
+      cerr << "insufficient number of parameters (given in command line)" << endl; 
+      errorCode = 1;  return;
+    case 2:
+      cerr << "invalid input character (a non capital letter was input)" << endl; 
+      errorCode = 2;  return;
+    default:
+      cerr << "Unknown error" << endl; 
+      errorCode = -1; return;
+    }
+}
+
+/*overload: also specifies filename in which error occurred and closes ifstream*/
+void Enigma::errorDescription(int code, const char* fileName, ifstream &file) {
+  if (code!=0) {
+    file.close();
+    cerr << "in " << fileName << ": ";
+  }
   switch(code) {
   case 0: return;
   case 3:
@@ -35,12 +51,6 @@ void Enigma::errorDescription(int code) {
   case 4:
     cerr << "non numeric character" << endl; 
     errorCode = 4;  return;
-  case 1:
-    cerr << "insufficient number of parameters (given in command line)" << endl; 
-    errorCode = 1;  return;
-  case 2:
-    cerr << "invalid input character (a non capital letter was input)" << endl; 
-    errorCode = 2;  return;
   case 5:
     cerr << "impossible plugboard configuration (file attempts to connect a contact with itself or with multiple contacts)" << endl; 
     errorCode = 5;  return;
@@ -77,50 +87,14 @@ bool Enigma::build(int argc, char** argv) {
 
   /*check sufficient number of parameters*/
   if (argc<3) {
-    errorDescription(1);        return false;
+    errorDescription(INSUFFICIENT_NUMBER_OF_PARAMETERS);
+    return false;
   }
 
-  for (int i=1; i<argc && i<10; i++) {
-    int fileStatus;
-    struct stat fileInfo;
-    char ch;
-    ifstream file;
-
-     /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
-#ifndef _WIN32
-    fileStatus = stat(argv[i], &fileInfo);
-    if (fileStatus!=0) {
-      cerr << "'"<< argv[i] << "' is a nonexistent pathname" << endl;
-      errorDescription(11);     return false;
-    }
-    else {
-      if (!S_ISREG(fileInfo.st_mode)) {
-	cerr << "'" << argv[i] << "' does not point to a regular file" << endl;
-	errorDescription(11);   return false;
-      }
-    }
-#endif
-
-    /*still need to check that the file can be opened.*/
-    file.open(argv[i]);
-    if (file.fail()) {
-      errorDescription(11);     return false;
-    }
-
-    /*check that all characters are numeric, new line, carriage return, tab or space*/
-    for (file >> ch; !file.eof(); file >> ch) {
-      if ((int) ch < 48 || (int) ch > 57) {
-	if (ch != 9 && ch != 10 && ch != 13 && ch != 32) {
-	  cerr << "in file " << i << ": ";
-	  errorDescription(4);  return false;
-	}
-      }
-    }
-    file.close();
-  }
-
-  /*reach here iif there are no errors. configuration can begin*/
+  /*set number of rotors*/
   nb_rotors = argc - 4;
+
+  /*call build on each component (this namely performs checks on each component)*/
   if ( !pb.build(argv[1]) )     return false;
   if ( !rf.build(argv[2]) )     return false;
   if (nb_rotors>0) {
@@ -153,6 +127,7 @@ bool Enigma::encrypt() {
 
 	/*leftmost rotor sends letterIndex to reflector*/
 	rf.setLetterIndex(rotor[0]->scramble());
+
       }
       /*if no rotors, plugboard leads straight to reflector*/
       else rf.setLetterIndex(pb.scramble());
@@ -211,45 +186,100 @@ bool PieceOfHardware::build(const char* configFilename, int type)
 {
   int num, i=0;
   ifstream file;
-  file.open(configFilename);
 
-  /*set configArray*/
-  for (istream_iterator<int> begin(file), end; begin!=end; ++begin, i++) {
-    num = *begin;
+  /*check that filename is valid; if so, open it*/
+  if (!fileIsOpenable(file, configFilename))
+    return false;
 
-    /*check that index is valid*/
-    if (num < 0 || num > 25) { 
-      machine->errorDescription(3);     return false;
+  /*check that entries are valid*/
+  for (file >> ws, file >> num; 
+       !file.eof() && i<26; 
+       file >> ws, file >> num, i++) {
+
+    if (!num && file.fail() && !file.eof()) {
+      machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename, file);    
+      return false;
     }
+
+    if (num < 0 || num > 25) { 
+      machine->errorDescription(INVALID_INDEX, configFilename, file);     
+      return false;
+    }
+
+    /*set configArray*/
     configArray[i] = num;
 
     /*check no two identical entries in configArray*/
     for (int j=i-1; j>=0; j--) {
       if (configArray[i]==configArray[j]) {
-	if (type==plugboard) {
-	  machine->errorDescription(5); return false;
+	if (type==plu) {
+	  machine->errorDescription(IMPOSSIBLE_PLUGBOARD_CONFIGURATION, configFilename, file); 
+	  return false;
+	}
+	else if (type==ref) {
+	  machine->errorDescription(INVALID_REFLECTOR_MAPPING, configFilename, file); 
+	  return false;
+	}
+	else if (type==rot) {
+	  machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename, file); 
+	  return false;
 	}
 	else {
-	  machine->errorDescription(9); return false;
-	}
-      }
+	  machine->errorDescription(REPEATED_ENTRIES_UNKNOWN_TYPE, configFilename, file); 
+	  return false;
+	} } } }
+
+  if (type==plu && i%2!=0) {            //check for an even number of plugboard parameters.
+    machine->errorDescription(INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS, configFilename, file);
+    return false;
+  }
+
+  else if (i != 26) {           //check for 13 pairs of reflector parameters or valid rotor mapping.
+    if (type==ref) {
+      machine->errorDescription(INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS, configFilename, file);
+      return false;
+    }
+    if (type==rot) {
+      machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename, file);
+      return false;
     }
   }
+ 
+  /*if not rotor, reach here iif configuration perfectly valid. if rotor, setRotPos() has yet to act, see Rotor::build() for implementation*/
+  configArray[i] = sintinel;       
 
-  if (type==plugboard && i%2!=0) {            //check for an even number of plugboard parameters.
-    machine->errorDescription(6);       return false;
-  }
-  if (type==reflector && i != 26) {           //check for 13 pairs of reflector parameter numbers.
-    machine->errorDescription(10);      return false;
-  }
-
-  configArray[i] = sintinel;                  //reach here iif config perfectly valid.
+  for (int j=0; configArray[j]!=sintinel; j++)
+    cerr << configArray[j];
+  cerr << endl;
+           
   file.close();
   return true;
 }
 
+bool PieceOfHardware::fileIsOpenable(ifstream &file, const char* fileName) {
+  /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
+  int fileStatus;
+  struct stat fileInfo;
+
+#ifndef _WIN32
+  fileStatus = stat(fileName, &fileInfo);
+  if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
+    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, fileName, file);     
+    return false;
+  }
+#endif
+
+  /*still need to check that the file can be opened.*/
+  file.open(fileName);
+  if (file.fail()) {
+    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, fileName, file);
+    return false;
+  }
+  return true;
+}
+
 /*storing the index value of the letter rather than the letter itself is great because it keeps this function very simple*/
-void PieceOfHardware::setLetterIndex(int value) {
+void PieceOfHardware::setLetterIndex(int const &value) {
   assert(value<26 && value>=0);
   letterIndex = value;
 }
@@ -261,7 +291,7 @@ Plugboard::Plugboard() {}
 Plugboard::Plugboard(Enigma *_machine) : PieceOfHardware::PieceOfHardware(_machine) {}
 
 bool Plugboard::build(const char* configFilename) {
-  return PieceOfHardware::build(configFilename, plugboard);
+  return PieceOfHardware::build(configFilename, plu);
 }
 
 /*sets letter: reads in one character from inFile, performs checks, ignores if space etc if valid, assigns index value to letter and returns true; if fail (inc eof) returns false*/
@@ -276,7 +306,8 @@ bool Plugboard::getLetterFromInputFile() {
     /*check that input is a capital letter, new line, carriage return, tab or space*/
     if (ascii>91 || ascii<64) {
       if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
-	machine->errorDescription(2); return false;
+	machine->errorDescription(INVALID_INPUT_CHARACTER); 
+	return false;
       }                                 //else letter is new line, carriage return, tab or space
     }                                   //so do nothing.       
     else {
@@ -311,7 +342,7 @@ void Plugboard::inverseScramble() {     //for any valid config file, scramble() 
       return;
     }
   }
-  machine->errorDescription(-1);        //should not ever reach here.
+  machine->errorDescription(UNKNOWN_ERROR); //should not ever reach here.
   letterIndex = -1;
 }
 
@@ -326,7 +357,7 @@ Reflector::Reflector() {}
 Reflector::Reflector(Enigma *_machine) : PieceOfHardware::PieceOfHardware(_machine) {}
 
 bool Reflector::build(const char* configFilename) {
-  return PieceOfHardware::build(configFilename, reflector);
+  return PieceOfHardware::build(configFilename, ref);
 }
 
 int Reflector::scramble() {
@@ -338,7 +369,7 @@ int Reflector::scramble() {
       return configArray[i-1];          //i is odd, so letter(configArray[i]) and
     }                                   //letter(configArray[i-1]) are connected.
   }
-  machine->errorDescription(-1);         //all letters should have a mapping, so should
+  machine->errorDescription(UNKNOWN_ERROR);//all letters should have a mapping, so should
   return -1;                            //not ever reach here.
 }
 /*END OF REFLECTOR DEFINITIONS*/
@@ -352,85 +383,87 @@ Rotor::Rotor(Enigma *_machine) : PieceOfHardware(_machine) {
   rotPos = 0;
 }
 
-bool Rotor::build(const char* configFilename, const char* posFilename, int rotor_nb)
-{
-  int num, i=0, k=0;
+bool Rotor::build(const char* configFilename, const char* posFilename, int rotNumber) {
+  if ( !PieceOfHardware::build(configFilename, rot) )
+    return false;
+  else if ( !setNotches(configFilename) )
+    return false;
+  else if ( !setRotpos(posFilename, rotNumber) )
+    return false;
+  else return true;
+}
+
+bool Rotor::setNotches(const char* configFilename) {
+  int i=0;
   ifstream file;
   file.open(configFilename);
-  istream_iterator<int> begin(file), end;
 
-  /*set configArray*/
-  for (; begin!=end && i<26; ++begin, i++) {
-    num = *begin;
+  /*skip to where notch positions are supposed to be*/
+  for (int k=0; k!=26; k++) {
+    file >> ws;
+    file >> notches[i];
+  }
+  
+  /*check that entries are valid*/
+  for (file >> ws, file >> notches[i]; 
+       !file.eof(); 
+       i++, file >> ws, file >> notches[i]) {   
 
-    /*check that index is valid*/
-    if (num < 0 || num > 25) {
-      machine->errorDescription(3);   return false;
+    if (!notches[i] && file.fail() && !file.eof()) {
+      machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename, file);    
+      return false;
     }
 
-    configArray[i] = num;
-
-    /*check no two identical entries in configArray*/
-    for (int j=i-1; j>=0; j--) {
-      if (configArray[i]==configArray[j]) {
-	machine->errorDescription(7); return false;
-      }
+    if (notches[i] < 0 || notches[i] > 25) { 
+      machine->errorDescription(INVALID_INDEX, configFilename, file);     
+      return false;
     }
   }
 
-  /*check that we have every input mapped. reach here iif no identical configArray entries, so merely need to check size)*/
-  if (i != 26) {
-    machine->errorDescription(7);     return false;
-  }
-
-  /*set notches, starting from where we left off*/
-  for (; begin!=end; ++begin, k++) {
-    num = *begin;
-
-    /*check that index is valid*/
-    if (num < 0 || num > 25) {
-      machine->errorDescription(3);   return false;
-    }
-
-    notches[k] = num;
-  }
-
-  /*reach here iif rotor config perfectly valid*/
-  configArray[i] = sintinel;
+  notches[i] = sintinel;
   file.close();
-  notches[k] = sintinel;
-
-  /*set rotPos*/
-  int count;
-  file.open(posFilename);
-  istream_iterator<int> begin2(file), end2;
-  for (count=0; count < rotor_nb && begin2!=end2; ++begin2, count++);
-
-  /*check that there is a starting position for the rotor*/
-  if (begin2==end2) {
-    machine->errorDescription(8);     return false;
-  }
-
-  /*check that index is valid*/
-  if (*begin2 < 0 || *begin2 > 25) {
-    machine->errorDescription(3);     return false;
-  }
-
-  rotPos = *begin2;
   return true;
 }
 
-int Rotor::getRotPos() const {
-  return rotPos;
+bool Rotor::setRotpos(const char* posFilename, int rotNumber) {
+  int count=0;
+  ifstream file;
+
+  if (!fileIsOpenable(file, posFilename))
+    return false;
+
+  for (file >> ws, file >> rotPos;
+       count < rotNumber && !file.eof(); 
+       count++, file >> ws, file >> rotPos);
+
+  /*check that there is a starting position for the rotor*/
+  if (file.eof()) {
+    machine->errorDescription(NO_ROTOR_STARTING_POSITION, posFilename, file);
+    return false;
+  }
+
+  /*check that all characters are numeric*/
+  if (!rotPos && file.fail() && !file.eof()) {
+    machine->errorDescription(NON_NUMERIC_CHARACTER, posFilename, file);    
+    return false;
+  }
+
+  /*check that index is valid*/
+  if (rotPos < 0 || rotPos > 25) {
+    machine->errorDescription(INVALID_INDEX, posFilename, file);
+    return false;
+  }
+
+  file.close();
+  return true;
 }
 
 bool Rotor::rotate() {
   rotPos = (rotPos + 1) % 26;
   for (int i=0; notches[i] != sintinel; i++) {
-    if (rotPos == notches[i]) {
+    if (rotPos == notches[i])
        return true;                       //if leftmost rotor does rotate, 'true' will be returned but
-    }                                     //'i>0' condition in 'for' loop in main will fail anyway.
-  }    
+  }                                       //'i>0' condition in 'for' loop in main will fail anyway.
   return false;
 }
 
@@ -448,7 +481,7 @@ int Rotor::inverseScramble() {
     if (scramble(i) == letterIndex)
       return i;
   }
-  machine->errorDescription(-1);          //should not ever reach here.
+  machine->errorDescription(UNKNOWN_ERROR); //should not ever reach here.
   return -1;
 }
 /*END OF ROTOR DEFINITIONS*/
