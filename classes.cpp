@@ -141,7 +141,7 @@ bool Enigma::encrypt() {
   /*encryption: while input file has valid letters to give, the process loops*/
   while (pb.getLetterFromInputFile())                  //loop ends if error input invalid or eof.
     {
-      cerr << pb.getLetterIndex() << "(input)";
+      cerr << pb.getLetterIndex() << "(input) -> ";
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
 	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--);
