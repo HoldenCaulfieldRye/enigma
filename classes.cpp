@@ -105,57 +105,40 @@ bool Enigma::encrypt() {
     {
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
-	cerr<< "(rotPos's rightToLeft before: ";
-	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--) {
-	  rotor[i]->showRotpos();
-	  cerr << ", ";
-	}
-	cerr << ") -> ";
+	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--)
 
 	/*plugboard sends letterIndex to rightmost rotor*/
 	rotor[nb_rotors-1]->setLetterIndex(pb.scramble());
-	cerr << rotor[nb_rotors-1]->getLetterIndex() << "(pb) -> ";
 
 	/*each rotor with a left neighbour scrambles letterIndex & sends it to neighbour*/
-	for (int i=nb_rotors-1; i>0; i--) {
+	for (int i=nb_rotors-1; i>0; i--)
 	  rotor[i-1]->setLetterIndex(rotor[i]->scramble());
-	cerr << rotor[i-1]->getLetterIndex() << "(rot" << i << ") -> ";
-	}
 
 	/*leftmost rotor sends letterIndex to reflector*/
 	rf.setLetterIndex(rotor[0]->scramble());
-	cerr << rf.getLetterIndex() << "(rot0) -> ";
       }
       /*if no rotors, plugboard leads straight to reflector*/
       else rf.setLetterIndex(pb.scramble());
-	cerr << rf.getLetterIndex() << "(pb) -> ";
 
       if (nb_rotors>0) {
 	/*reflector sends letterIndex to leftmost rotor*/
 	rotor[0]->setLetterIndex(rf.scramble());
-	cerr << rotor[0]->getLetterIndex() << "(rf) -> ";
 
 	/*each rotor with a right neighbour inversely scrambles letterIndex & sends to neighbour*/
-	for (int i=0; i<nb_rotors-1; i++) {
+	for (int i=0; i<nb_rotors-1; i++)
 	  rotor[i+1]->setLetterIndex(rotor[i]->inverseScramble());
-cerr << rotor[i+1]->getLetterIndex() << "(rot" << i << ") -> ";
-	}
 
 	/*rightmost rotor sends letterIndex to plugboard*/
 	pb.setLetterIndex(rotor[nb_rotors-1]->inverseScramble());
-cerr << pb.getLetterIndex() << "(rot" << nb_rotors-1 << ") -> ";
       }
       /*if no rotors, reflector leads straight to plugboard*/
       else pb.setLetterIndex(rf.scramble());
-cerr << pb.getLetterIndex() << "(rf) -> "; 
 
       /*plugboard inversely scrambles letterIndex*/
       pb.inverseScramble();
-cerr << pb.getLetterIndex() << "(pb) -> ";
 
       /*plugboard outputs letter corresponding to letterIndex*/
       outputLetter = pb.getLetterIndex() + 65;
-cerr << "outputting " << outputLetter << endl;
       cout << outputLetter;
     }
 
