@@ -23,17 +23,24 @@ Enigma::Enigma() : pb(this), rf(this) {
 }
 
 /*function for errors*/
-void Enigma::errorDescription(int code, const char* fileName) {
-  if (code!=0)
-    cerr << "in " << fileName << ": ";
-  switch(code) {
-  case 0: return;
+void Enigma::errorDescription(int code) {
   case 1:
     cerr << "insufficient number of parameters (given in command line)" << endl; 
     errorCode = 1;  return;
   case 2:
     cerr << "invalid input character (a non capital letter was input)" << endl; 
     errorCode = 2;  return;
+  default:
+    cerr << "Unknown error" << endl; 
+    errorCode = -1; return;
+}
+
+/*overload: also specifies filename in which error occurred and closes ifstream*/
+void Enigma::errorDescription(int code, const char* fileName) {
+  if (code!=0)
+    cerr << "in " << fileName << ": ";
+  switch(code) {
+  case 0: return;
   case 3:
     cerr << "invalid index (a number in configuration file is not between 0 and 25)" << endl;
     errorCode = 3;  return;
@@ -215,10 +222,7 @@ bool PieceOfHardware::build(const char* configFilename, int type)
 	else {
 	  machine->errorDescription(REPEATED_ENTRIES_UNKNOWN_TYPE, configFilename); 
 	  return false;
-	}
-      }
-    }
-  }
+	} } } }
 
   if (type==plu && i%2!=0) {            //check for an even number of plugboard parameters.
     machine->errorDescription(INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS, configFilename);
@@ -370,52 +374,6 @@ Rotor::Rotor(Enigma *_machine) : PieceOfHardware(_machine) {
 }
 
 bool Rotor::build(const char* configFilename, const char* posFilename, int rotNumber) {
-  // int num, i=0, k=0;
-  // ifstream file;
-  // file.open(configFilename);
-  // istream_iterator<int> begin(file), end;
-
-  // /*set configArray*/
-  // for (; begin!=end && i<26; ++begin, i++) {
-  //   num = *begin;
-
-  //   /*check that index is valid*/
-  //   if (num < 0 || num > 25) {
-  //     machine->errorDescription(3);   return false;
-  //   }
-
-  //   configArray[i] = num;
-
-    /*check no two identical entries in configArray*/
-    // for (int j=i-1; j>=0; j--) {
-    //   if (configArray[i]==configArray[j]) {
-    // 	machine->errorDescription(7); return false;
-    //   }
-    // }
-  // }
-
-  /*check that we have every input mapped. reach here iif no identical configArray entries, so merely need to check size)*/
-  // if (i != 26) {
-  //   machine->errorDescription(7);     return false;
-  // }
-
-  // /*set notches, starting from where we left off*/
-  // for (; begin!=end; ++begin, k++) {
-  //   num = *begin;
-
-  //   /*check that index is valid*/
-  //   if (num < 0 || num > 25) {
-  //     machine->errorDescription(3);   return false;
-  //   }
-
-  //   notches[k] = num;
-  // }
-
-  // /*reach here iif rotor config perfectly valid*/
-  // configArray[i] = sintinel;
-  // file.close();
-  // notches[k] = sintinel;
-
   if ( !PieceOfHardware::build(configFilename, rot) )
     return false;
   else if ( !setNotches(configFilename) )
@@ -512,7 +470,7 @@ int Rotor::inverseScramble() {
     if (scramble(i) == letterIndex)
       return i;
   }
-  machine->errorDescription(UNKNOWN_ERROR, "rotor inverse scrambling");          //should not ever reach here.
+  machine->errorDescription(UNKNOWN_ERROR); //should not ever reach here.
   return -1;
 }
 /*END OF ROTOR DEFINITIONS*/

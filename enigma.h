@@ -91,7 +91,9 @@ class Enigma {
 
  public:
   Enigma();
-  void errorDescription(int code, const char* fileName); //also sets errorCode
+  void errorDescription(int code); //describes error, sets error code
+  /*overload: also specifies filename in which error occurred and closes ifstream*/
+  void errorDescription(int code, const char* fileName, ifstream &file);
   int getErrorCode() const;
   bool build(int argc, char** argv);
   bool encrypt();
