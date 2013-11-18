@@ -83,7 +83,7 @@ bool Enigma::build(int argc, char** argv) {
 
   /*check sufficient number of parameters*/
   if (argc<3) {
-    errorDescription(INSUFFICIENT_NUMBER_OF_PARAMETERS, "command line");
+    errorDescription(INSUFFICIENT_NUMBER_OF_PARAMETERS);
     return false;
   }
 
@@ -192,12 +192,12 @@ bool PieceOfHardware::build(const char* configFilename, int type)
        file >> ws, file >> num, i++) {
 
     if (!num && file.fail() && !file.eof()) {
-      machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename);    
+      machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename, file);    
       return false;
     }
 
     if (num < 0 || num > 25) { 
-      machine->errorDescription(INVALID_INDEX, configFilename);     
+      machine->errorDescription(INVALID_INDEX, configFilename, file);     
       return false;
     }
 
@@ -208,34 +208,34 @@ bool PieceOfHardware::build(const char* configFilename, int type)
     for (int j=i-1; j>=0; j--) {
       if (configArray[i]==configArray[j]) {
 	if (type==plu) {
-	  machine->errorDescription(IMPOSSIBLE_PLUGBOARD_CONFIGURATION, configFilename); 
+	  machine->errorDescription(IMPOSSIBLE_PLUGBOARD_CONFIGURATION, configFilename, file); 
 	  return false;
 	}
 	else if (type==ref) {
-	  machine->errorDescription(INVALID_REFLECTOR_MAPPING, configFilename); 
+	  machine->errorDescription(INVALID_REFLECTOR_MAPPING, configFilename, file); 
 	  return false;
 	}
 	else if (type==rot) {
-	  machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename); 
+	  machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename, file); 
 	  return false;
 	}
 	else {
-	  machine->errorDescription(REPEATED_ENTRIES_UNKNOWN_TYPE, configFilename); 
+	  machine->errorDescription(REPEATED_ENTRIES_UNKNOWN_TYPE, configFilename, file); 
 	  return false;
 	} } } }
 
   if (type==plu && i%2!=0) {            //check for an even number of plugboard parameters.
-    machine->errorDescription(INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS, configFilename);
+    machine->errorDescription(INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS, configFilename, file);
     return false;
   }
 
   else if (i != 26) {           //check for 13 pairs of reflector parameters or valid rotor mapping.
     if (type==ref) {
-      machine->errorDescription(INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS, configFilename);
+      machine->errorDescription(INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS, configFilename, file);
       return false;
     }
     if (type==rot) {
-      machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename);
+      machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename, file);
       return false;
     }
   }
@@ -254,7 +254,7 @@ bool PieceOfHardware::fileIsOpenable(ifstream &file, const char* fileName) {
 #ifndef _WIN32
   fileStatus = stat(fileName, &fileInfo);
   if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
-    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, fileName);     
+    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, fileName, file);     
     return false;
   }
 #endif
@@ -262,7 +262,7 @@ bool PieceOfHardware::fileIsOpenable(ifstream &file, const char* fileName) {
   /*still need to check that the file can be opened.*/
   file.open(fileName);
   if (file.fail()) {
-    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, fileName);
+    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, fileName, file);
     return false;
   }
   return true;
@@ -296,7 +296,7 @@ bool Plugboard::getLetterFromInputFile() {
     /*check that input is a capital letter, new line, carriage return, tab or space*/
     if (ascii>91 || ascii<64) {
       if (ascii!=10 && ascii!=13 && ascii!=9 && ascii!=32) {
-	machine->errorDescription(INVALID_INPUT_CHARACTER, "input file"); 
+	machine->errorDescription(INVALID_INPUT_CHARACTER); 
 	return false;
       }                                 //else letter is new line, carriage return, tab or space
     }                                   //so do nothing.       
@@ -332,7 +332,7 @@ void Plugboard::inverseScramble() {     //for any valid config file, scramble() 
       return;
     }
   }
-  machine->errorDescription(UNKNOWN_ERROR, "plugboard inverse scrambling"); //should not ever reach here.
+  machine->errorDescription(UNKNOWN_ERROR); //should not ever reach here.
   letterIndex = -1;
 }
 
@@ -359,7 +359,7 @@ int Reflector::scramble() {
       return configArray[i-1];          //i is odd, so letter(configArray[i]) and
     }                                   //letter(configArray[i-1]) are connected.
   }
-  machine->errorDescription(UNKNOWN_ERROR, "reflector scrambling process");//all letters should have a mapping, so should
+  machine->errorDescription(UNKNOWN_ERROR);//all letters should have a mapping, so should
   return -1;                            //not ever reach here.
 }
 /*END OF REFLECTOR DEFINITIONS*/
@@ -400,17 +400,18 @@ bool Rotor::setNotches(const char* configFilename) {
        i++, file >> ws, file >> notches[i]) {   
 
     if (!notches[i] && file.fail() && !file.eof()) {
-      machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename);    
+      machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename, file);    
       return false;
     }
 
     if (notches[i] < 0 || notches[i] > 25) { 
-      machine->errorDescription(INVALID_INDEX, configFilename);     
+      machine->errorDescription(INVALID_INDEX, configFilename, file);     
       return false;
     }
   }
 
   notches[i] = sintinel;
+  file.close();
   return true;
 }
 
@@ -427,22 +428,23 @@ bool Rotor::setRotpos(const char* posFilename, int rotNumber) {
 
   /*check that there is a starting position for the rotor*/
   if (file.eof()) {
-    machine->errorDescription(NO_ROTOR_STARTING_POSITION, posFilename);
+    machine->errorDescription(NO_ROTOR_STARTING_POSITION, posFilename, file);
     return false;
   }
 
   /*check that all characters are numeric*/
   if (!rotPos && file.fail() && !file.eof()) {
-    machine->errorDescription(NON_NUMERIC_CHARACTER, posFilename);    
+    machine->errorDescription(NON_NUMERIC_CHARACTER, posFilename, file);    
     return false;
   }
 
   /*check that index is valid*/
   if (rotPos < 0 || rotPos > 25) {
-    machine->errorDescription(INVALID_INDEX, posFilename);
+    machine->errorDescription(INVALID_INDEX, posFilename, file);
     return false;
   }
 
+  file.close();
   return true;
 }
 
