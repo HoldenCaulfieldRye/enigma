@@ -83,53 +83,15 @@ bool Enigma::build(int argc, char** argv) {
   /*set number of rotors*/
   nb_rotors = argc - 4;
 
-  // for (int i=1; i<argc && i<10; i++) {
-  //   int fileStatus;
-  //   struct stat fileInfo;
-  //   char ch;
-  //   ifstream file;
-
-     /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
-// #ifndef _WIN32
-//     fileStatus = stat(argv[i], &fileInfo);
-//     if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
-//       errorDescription(ERROR_OPENING_CONFIGURATION_FILE, argv[i]);     
-//       return false;
-//     }
-// #endif
-
-//     /*still need to check that the file can be opened.*/
-//     file.open(argv[i]);
-//     if (file.fail()) {
-//       errorDescription(ERROR_OPENING_CONFIGURATION_FILE, argv[i]);
-//       return false;
-//     }
-
-  //   /*check that all characters are numeric, new line, carriage return, tab or space*/
-  //   for (file >> ch; !file.eof(); file >> ch) {
-  //     if ((int) ch < 48 || (int) ch > 57) {
-  // 	if (ch != 9 && ch != 10 && ch != 13 && ch != 32) {
-  // 	  cerr << "in file " << i << ": ";
-  // 	  errorDescription(4);  return false;
-  // 	}
-  //     }
-  //   }
-  //   file.close();
-  // }
-
-  /*reach here iif config files can be opened*/
+  /*call build on each component (this namely performs checks on each component)*/
   if ( !pb.build(argv[1]) )     return false;
-  cerr << "pb build success" << endl;
   if ( !rf.build(argv[2]) )     return false;
-  cerr << "rf build success" << endl;
   if (nb_rotors>0) {
     rotor = new Rotor *[nb_rotors];
     for (int i=0; i<nb_rotors; i++) {
       rotor[i] = new Rotor(this);
       if( !rotor[i]->build(argv[i+3], argv[argc-1], i) ) //starting positions are set.
 	return false;
-
-  cerr << "rot build success" << endl;
     }  
   }
   return true;
@@ -138,17 +100,9 @@ bool Enigma::build(int argc, char** argv) {
 bool Enigma::encrypt() {
   char outputLetter;
 
-	cerr<< "(notches rightToLeft: ";
-	for (int i=nb_rotors-1; i>=0; i--) {
-	  rotor[i]->showNotches();
-	  cerr << "; ";
-	}
-	cerr<<endl;
-
   /*encryption: while input file has valid letters to give, the process loops*/
   while (pb.getLetterFromInputFile())                  //loop ends if error input invalid or eof.
     {
-      cerr << pb.getLetterIndex() << "(input) -> ";
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
 	cerr<< "(rotPos's rightToLeft before: ";
