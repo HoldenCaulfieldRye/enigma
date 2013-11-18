@@ -14,9 +14,6 @@ using namespace std;
 #include"enigma.h"
 
 
-/* NO ERROR CODES, PHRASES ONLY!!!*/
-
-
 /*ENIGMA DEFINITIONS*/
 /*minimalist constructor, declares machine components*/
 Enigma::Enigma() : pb(this), rf(this) {
@@ -122,13 +119,17 @@ bool Enigma::build(int argc, char** argv) {
 
   /*reach here iif config files can be opened*/
   if ( !pb.build(argv[1]) )     return false;
+  cerr << "pb build success" << endl;
   if ( !rf.build(argv[2]) )     return false;
+  cerr << "rf build success" << endl;
   if (nb_rotors>0) {
     rotor = new Rotor *[nb_rotors];
     for (int i=0; i<nb_rotors; i++) {
       rotor[i] = new Rotor(this);
       if( !rotor[i]->build(argv[i+3], argv[argc-1], i) ) //starting positions are set.
 	return false;
+
+  cerr << "rot build success" << endl;
     }  
   }
   return true;
@@ -209,32 +210,36 @@ PieceOfHardware::PieceOfHardware(Enigma* _machine) {
 
 bool PieceOfHardware::build(const char* configFilename, int type)
 {
-  int fileStatus, num, i=0;
-  struct stat fileInfo;
+  int num, i=0;
   ifstream file;
 
-  /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
-#ifndef _WIN32
-  fileStatus = stat(configFilename, &fileInfo);
-  if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
-    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, configFilename);     
+  /*check that filename is valid; if so, open it*/
+  if (!fileIsOpenable(file, configFilename))
     return false;
-  }
-#endif
 
-  /*still need to check that the file can be opened.*/
-  file.open(configFilename);
-  if (file.fail()) {
-    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, configFilename);
-    return false;
-  }
+//   /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
+// #ifndef _WIN32
+//   fileStatus = stat(configFilename, &fileInfo);
+//   if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
+//     machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, configFilename);     
+//     return false;
+//   }
+// #endif
+
+//   /*still need to check that the file can be opened.*/
+//   file.open(configFilename);
+//   if (file.fail()) {
+//     machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, configFilename);
+//     return false;
+//   }
 
   /*set configArray*/
   /*check that entries are valid*/
   for (file >> ws, file >> num; 
        !file.eof() && i<26; 
        file >> ws, file >> num, i++) {
-    if (!num) {
+    cerr << "num: " << num << ", ";
+    if (!num && file.fail() && !file.eof()) {
       machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename);    
       return false;
     }
@@ -258,13 +263,18 @@ bool PieceOfHardware::build(const char* configFilename, int type)
 	  machine->errorDescription(INVALID_REFLECTOR_MAPPING, configFilename); 
 	  return false;
 	}
-	else {
+	else if (type==rot) {
 	  machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename); 
+	  return false;
+	}
+	else {
+	  machine->errorDescription(REPEATED_ENTRIES_UNKNOWN_TYPE, configFilename); 
 	  return false;
 	}
       }
     }
   }
+  cerr << endl;
 
   if (type==plu && i%2!=0) {            //check for an even number of plugboard parameters.
     machine->errorDescription(INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS, configFilename);
@@ -272,15 +282,41 @@ bool PieceOfHardware::build(const char* configFilename, int type)
   }
 
   else if (i != 26) {           //check for 13 pairs of reflector parameters or valid rotor mapping
-    if (type==ref)
+    if (type==ref) {
       machine->errorDescription(INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS, configFilename);
-    else machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename);
-    return false;
+      return false;
+    }
+    if (type==rot) {
+      machine->errorDescription(INVALID_ROTOR_MAPPING, configFilename);
+      return false;
+    }
   }
  
   /*if not rotor, reach here iif configuration perfectly valid. if rotor, setRotPos() has yet to act, see Rotor::build() for implementation*/
   configArray[i] = sintinel;                  
   file.close();
+  return true;
+}
+
+bool PieceOfHardware::fileIsOpenable(ifstream &file, const char* fileName) {
+  /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
+  int fileStatus;
+  struct stat fileInfo;
+
+#ifndef _WIN32
+  fileStatus = stat(fileName, &fileInfo);
+  if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
+    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, fileName);     
+    return false;
+  }
+#endif
+
+  /*still need to check that the file can be opened.*/
+  file.open(fileName);
+  if (file.fail()) {
+    machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, fileName);
+    return false;
+  }
   return true;
 }
 
@@ -446,27 +482,30 @@ bool Rotor::build(const char* configFilename, const char* posFilename, int rotNu
 }
 
 bool Rotor::setNotches(const char* configFilename) {
-  int num, i=26;
+  int i=0;
   ifstream file;
+  file.open(configFilename);
 
-  /*skip to where notch positions should be*/
-  for (file.open(configFilename), file >> ws, file >> num;
-       i!=26; 
-       file >> ws, file >> num, i++);               
-
+  /*skip to where notch positions are supposed to be*/
+  for (int k=0; k!=26; k++) {
+    file >> ws;
+    file >> notches[i];
+  }
+  
   /*check that entries are valid*/
-  for (file >> ws, file >> num; 
+  for (file >> ws, file >> notches[i]; 
        !file.eof(); 
-       file >> ws, file >> num, i++) {   
-    if (!num) {
+       i++, file >> ws, file >> notches[i]) {   
+
+    if (!notches[i] && file.fail() && !file.eof()) {
       machine->errorDescription(NON_NUMERIC_CHARACTER, configFilename);    
       return false;
     }
-    if (num < 0 || num > 25) { 
+
+    if (notches[i] < 0 || notches[i] > 25) { 
       machine->errorDescription(INVALID_INDEX, configFilename);     
       return false;
     }
-    notches[i-26] = num;
   }
 
   notches[i-26] = sintinel;
@@ -477,7 +516,10 @@ bool Rotor::setRotpos(const char* posFilename, int rotNumber) {
   int count = 0;
   ifstream file;
 
-  for (file.open(posFilename), file >> ws, file >> rotPos;
+  if (!fileIsOpenable(file, posFilename))
+    return false;
+
+  for (file >> ws, file >> rotPos;
        count < rotNumber && !file.eof() && rotPos; 
        count++, file >> ws, file >> rotPos);
 
@@ -488,7 +530,7 @@ bool Rotor::setRotpos(const char* posFilename, int rotNumber) {
   }
 
   /*check that all characters are numeric*/
-  if (!rotPos) {
+  if (!rotPos && file.fail() && !file.eof()) {
     machine->errorDescription(NON_NUMERIC_CHARACTER, posFilename);    
     return false;
   }
