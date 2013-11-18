@@ -144,7 +144,12 @@ bool Enigma::encrypt() {
       cerr << pb.getLetterIndex() << "(input) -> ";
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
-	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--);
+	cerr<< "(rotPos's rightToLeft: ";
+	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--) {
+	  rotor[i]->showRotpos();
+	  cerr << ", ";
+	}
+	cerr << ") -> ";
 
 	/*plugboard sends letterIndex to rightmost rotor*/
 	rotor[nb_rotors-1]->setLetterIndex(pb.scramble());
@@ -539,15 +544,19 @@ bool Rotor::setNotches(const char* configFilename) {
   return true;
 }
 
+void Rotor::showRotpos() {  //DELETE
+  cerr << rotPos;
+}
+
 bool Rotor::setRotpos(const char* posFilename, int rotNumber) {
-  int count = 0;
+  int count=0;
   ifstream file;
 
   if (!fileIsOpenable(file, posFilename))
     return false;
 
   for (file >> ws, file >> rotPos;
-       count < rotNumber && !file.eof() && rotPos; 
+       count < rotNumber && !file.eof(); 
        count++, file >> ws, file >> rotPos);
 
   /*check that there is a starting position for the rotor*/
