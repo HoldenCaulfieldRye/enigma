@@ -138,13 +138,20 @@ bool Enigma::build(int argc, char** argv) {
 bool Enigma::encrypt() {
   char outputLetter;
 
+	cerr<< "(notches rightToLeft: ";
+	for (int i=nb_rotors-1; i>=0; i--) {
+	  rotor[i]->showNotches();
+	  cerr << "; ";
+	}
+	cerr<<endl;
+
   /*encryption: while input file has valid letters to give, the process loops*/
   while (pb.getLetterFromInputFile())                  //loop ends if error input invalid or eof.
     {
       cerr << pb.getLetterIndex() << "(input) -> ";
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
-	cerr<< "(rotPos's rightToLeft: ";
+	cerr<< "(rotPos's rightToLeft before: ";
 	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--) {
 	  rotor[i]->showRotpos();
 	  cerr << ", ";
@@ -538,14 +545,21 @@ bool Rotor::setNotches(const char* configFilename) {
       machine->errorDescription(INVALID_INDEX, configFilename);     
       return false;
     }
+
+    cerr << "adding notch "<< notches[i] <<endl;
   }
 
-  notches[i-26] = sintinel;
+  notches[i] = sintinel;
   return true;
 }
 
-void Rotor::showRotpos() {  //DELETE
+void Rotor::showRotpos() const {  //DELETE
   cerr << rotPos;
+}
+
+void Rotor::showNotches() const {
+  for (int i=0; notches[i]!=sintinel; i++)
+    cerr << notches[i] << ", ";
 }
 
 bool Rotor::setRotpos(const char* posFilename, int rotNumber) {
@@ -584,6 +598,7 @@ bool Rotor::rotate() {
   rotPos = (rotPos + 1) % 26;
   for (int i=0; notches[i] != sintinel; i++) {
     if (rotPos == notches[i]) {
+      cerr << "notch met!"; 
        return true;                       //if leftmost rotor does rotate, 'true' will be returned but
     }                                     //'i>0' condition in 'for' loop in main will fail anyway.
   }    
@@ -592,6 +607,7 @@ bool Rotor::rotate() {
 
 int Rotor::scramble(int number) const {
   assert(number>=0 && number<26);
+  cerr << "rotPos: " << rotPos << " -> ";
   return (configArray[(number + rotPos) % 26] + 26 - rotPos) % 26;
 }
 

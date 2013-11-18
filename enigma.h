@@ -80,7 +80,8 @@ class Rotor : public PieceOfHardware {
   int scramble();
   int scramble(int letterIndexToScramble) const;
   int inverseScramble();
-  void showRotpos(); //DELETE
+  void showRotpos() const; //DELETE
+  void showNotches() const; //DELETE
 };
 
 
