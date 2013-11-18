@@ -35,6 +35,7 @@ class PieceOfHardware {
  public:
   PieceOfHardware();
   PieceOfHardware(Enigma* _machine);
+  int getLetterIndex() const;
   bool build(const char* configurationFilename, int hardwareType); //performs most error checks
   bool fileIsOpenable(ifstream &file, const char* fileName); //if openable, opens file
   void setLetterIndex(int const &newLetterIndex);
