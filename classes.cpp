@@ -170,11 +170,6 @@ PieceOfHardware::PieceOfHardware(Enigma* _machine) {
     configArray[i] = 0;
 }
 
-
-int PieceOfHardware::getLetterIndex() const {    //DELETE
-  return letterIndex;
-}
-
 bool PieceOfHardware::build(const char* configFilename, int type)
 {
   int num, i=0;
@@ -184,23 +179,6 @@ bool PieceOfHardware::build(const char* configFilename, int type)
   if (!fileIsOpenable(file, configFilename))
     return false;
 
-//   /*use 'stat' system call to check that arg is a regular file. on linux, if a directory is given as command line arg, for some reason an ifstream can open it and 'file >>' endlessly reads in a char with ascii value 10. on windows, a directory cannot be opened by ifstream.*/
-// #ifndef _WIN32
-//   fileStatus = stat(configFilename, &fileInfo);
-//   if (fileStatus!=0 || !S_ISREG(fileInfo.st_mode)) {
-//     machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, configFilename);     
-//     return false;
-//   }
-// #endif
-
-//   /*still need to check that the file can be opened.*/
-//   file.open(configFilename);
-//   if (file.fail()) {
-//     machine->errorDescription(ERROR_OPENING_CONFIGURATION_FILE, configFilename);
-//     return false;
-//   }
-
-  /*set configArray*/
   /*check that entries are valid*/
   for (file >> ws, file >> num; 
        !file.eof() && i<26; 
@@ -241,14 +219,13 @@ bool PieceOfHardware::build(const char* configFilename, int type)
       }
     }
   }
-  cerr << endl;
 
   if (type==plu && i%2!=0) {            //check for an even number of plugboard parameters.
     machine->errorDescription(INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS, configFilename);
     return false;
   }
 
-  else if (i != 26) {           //check for 13 pairs of reflector parameters or valid rotor mapping
+  else if (i != 26) {           //check for 13 pairs of reflector parameters or valid rotor mapping.
     if (type==ref) {
       machine->errorDescription(INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS, configFilename);
       return false;
@@ -262,8 +239,6 @@ bool PieceOfHardware::build(const char* configFilename, int type)
   /*if not rotor, reach here iif configuration perfectly valid. if rotor, setRotPos() has yet to act, see Rotor::build() for implementation*/
   configArray[i] = sintinel;                  
   file.close();
-
-  showConfigArray();   //DELETE
   return true;
 }
 
@@ -293,12 +268,6 @@ bool PieceOfHardware::fileIsOpenable(ifstream &file, const char* fileName) {
 void PieceOfHardware::setLetterIndex(int const &value) {
   assert(value<26 && value>=0);
   letterIndex = value;
-}
-
-void PieceOfHardware::showConfigArray() { //DELETE
-  for (int i=0; configArray[i]!=sintinel; i++)
-    cerr << configArray[i] << ", ";
-  cerr << endl;
 }
 /*END OF PIECEOFHARDWARE DEFINITIONS*/
 
