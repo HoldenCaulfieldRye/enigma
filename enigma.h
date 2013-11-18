@@ -13,7 +13,6 @@
 #define INVALID_REFLECTOR_MAPPING			9
 #define INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS	10
 #define ERROR_OPENING_CONFIGURATION_FILE		11
-#define REPEATED_ENTRIES_UNKNOWN_TYPE                   12
 #define UNKNOWN_ERROR                                   -1
 #define NO_ERROR					0
 
@@ -35,7 +34,7 @@ class PieceOfHardware {
  public:
   PieceOfHardware();
   PieceOfHardware(Enigma* _machine);
-  bool build(const char* configurationFilename, int hardwareType); //performs most error checks
+   bool build(const char* configurationFilename, int hardwareType); //performs most error checks
   bool fileIsOpenable(ifstream &file, const char* fileName); //if openable, opens file
   void setLetterIndex(int const &newLetterIndex);
 };

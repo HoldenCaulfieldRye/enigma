@@ -24,21 +24,25 @@ Enigma::Enigma() : pb(this), rf(this) {
 
 /*function for errors*/
 void Enigma::errorDescription(int code) {
-  case 1:
-    cerr << "insufficient number of parameters (given in command line)" << endl; 
-    errorCode = 1;  return;
-  case 2:
-    cerr << "invalid input character (a non capital letter was input)" << endl; 
-    errorCode = 2;  return;
-  default:
-    cerr << "Unknown error" << endl; 
-    errorCode = -1; return;
+  switch (code) {
+    case 1:
+      cerr << "insufficient number of parameters (given in command line)" << endl; 
+      errorCode = 1;  return;
+    case 2:
+      cerr << "invalid input character (a non capital letter was input)" << endl; 
+      errorCode = 2;  return;
+    default:
+      cerr << "Unknown error" << endl; 
+      errorCode = -1; return;
+    }
 }
 
 /*overload: also specifies filename in which error occurred and closes ifstream*/
-void Enigma::errorDescription(int code, const char* fileName) {
-  if (code!=0)
+void Enigma::errorDescription(int code, const char* fileName, ifstream &file) {
+  if (code!=0) {
+    file.close();
     cerr << "in " << fileName << ": ";
+  }
   switch(code) {
   case 0: return;
   case 3:
@@ -112,7 +116,7 @@ bool Enigma::encrypt() {
     {
       if (nb_rotors>0) {
 	/*rightmost rotor rotates*/
-	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--)
+	for (int i=nb_rotors-1; i>=0 && rotor[i]->rotate(); i--);
 
 	/*plugboard sends letterIndex to rightmost rotor*/
 	rotor[nb_rotors-1]->setLetterIndex(pb.scramble());
@@ -123,6 +127,7 @@ bool Enigma::encrypt() {
 
 	/*leftmost rotor sends letterIndex to reflector*/
 	rf.setLetterIndex(rotor[0]->scramble());
+
       }
       /*if no rotors, plugboard leads straight to reflector*/
       else rf.setLetterIndex(pb.scramble());
@@ -241,7 +246,12 @@ bool PieceOfHardware::build(const char* configFilename, int type)
   }
  
   /*if not rotor, reach here iif configuration perfectly valid. if rotor, setRotPos() has yet to act, see Rotor::build() for implementation*/
-  configArray[i] = sintinel;                  
+  configArray[i] = sintinel;       
+
+  for (int j=0; configArray[j]!=sintinel; j++)
+    cerr << configArray[j];
+  cerr << endl;
+           
   file.close();
   return true;
 }
@@ -459,7 +469,6 @@ bool Rotor::rotate() {
 
 int Rotor::scramble(int number) const {
   assert(number>=0 && number<26);
-  cerr << "rotPos: " << rotPos << " -> ";
   return (configArray[(number + rotPos) % 26] + 26 - rotPos) % 26;
 }
 
