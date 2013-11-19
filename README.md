@@ -16,7 +16,7 @@ program from Linux shell would be:
 1) git clone https://github.com/HoldenCaulfieldRye/enigma   
 2) cd enigma  
 3) ./enigma plugboards/I.pb reflectors/III.rf rotors/II.rot rotors/V.rot rotors/VII.rot rotors/5.pos < encrypted.txt  
-4) [enter your message, capital letters only, no punctuation, then hit return]    
+4) [enter your message, capital letters or space or tab only, no punctuation, then hit return]    
 5) cat encrypted.txt  
 6) ./enigma plugboards/I.pb reflectors/III.rf rotors/II.rot rotors/V.rot rotors/VII.rot rotors/5.pos > encrypted.txt  
   
