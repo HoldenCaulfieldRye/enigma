@@ -16,14 +16,14 @@ program from Linux shell would be:
 1) git clone https://github.com/HoldenCaulfieldRye/enigma Enigma   
 2) cd Enigma  
 3) ./enigma plugboards/I.pb reflectors/III.rf rotors/II.rot rotors/V.rot rotors/VII.rot rotors/5.pos < encrypted.txt  
-4) [enter your message, capital letter only, no punctuation, then hit return]    
+4) [enter your message, capital letters only, no punctuation, then hit return]    
 5) cat encrypted.txt  
 6) ./enigma plugboards/I.pb reflectors/III.rf rotors/II.rot rotors/V.rot rotors/VII.rot rotors/5.pos > encrypted.txt  
   
 The 6th command is there to show that another remote user can obtain the original message by plugging the encrypted message 
 into a machine with the same configuration.   
 
-The encryption can only be cracked by figuring how each component maps input to output. In cryptography, the approach is to 
+The encryption can only be cracked by figuring out how each component maps input to output. In cryptography, the approach is to 
 deduce this bijection with combinatorics and a sufficiently large input-output dataset. What makes Enigma particularly 
 difficult to crack is that as each character is encrypted, rotors rotate pseudo-randomly, and this alters their mapping.  
   
