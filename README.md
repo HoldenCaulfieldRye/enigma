@@ -20,9 +20,9 @@ program from Linux shell would be:
 5) cat encrypted.txt  
 6) ./enigma plugboards/I.pb reflectors/III.rf rotors/II.rot rotors/V.rot rotors/VII.rot rotors/5.pos > encrypted.txt  
   
-The 6th command is there to show that another remote user can obtain the original message by plugging the encrypted message 
-into a machine with the same configuration. The mapping produced by an enigma machine is therefore a mathematical 
-involution. This property is enforced by the reflector.  
+The 6th command is there to show that another remote user can obtain the original message by inputting the encrypted message 
+into a machine with the same configuration. This happens because the mapping produced by an enigma machine is a mathematical 
+involution of the set {A, B, C, ... , Z}.  
 
 The encryption can only be cracked by figuring out how each component maps input to output. In cryptography, the approach is to 
 deduce this bijection with combinatorics and a sufficiently large input-output dataset. What makes Enigma particularly 
